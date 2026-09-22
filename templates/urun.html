@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ urun.title }} - Özdilek Toptan{% endblock %}
+{% block content %}
+<a href="javascript:history.back()">&larr; Geri</a>
+<div class="urun-detay">
+    {% if urun.images %}<img src="{{ urun.images[0] }}" alt="{{ urun.title }}">{% endif %}
+    <h1>{{ urun.title }}</h1>
+    <div class="fiyat-buyuk">{{ "%.2f"|format(fiyat) }} ₺</div>
+    <div class="stok">Stok: {{ urun.stock }} adet &middot; Barkod: {{ urun.barcode }}</div>
+
+    {% if kullanici_adi %}
+    <form method="post" action="{{ url_for('sepete_ekle') }}" style="margin-top:16px; display:flex; gap:10px; align-items:center;">
+        <input type="hidden" name="barkod" value="{{ urun.barcode }}">
+        <input type="hidden" name="donus_url" value="{{ request.full_path }}">
+        <input type="number" name="miktar" value="1" min="1" max="{{ urun.stock }}" class="form-field" style="width:100px; margin:0;">
+        <button class="btn btn-orange" type="submit">Sepete Ekle</button>
+    </form>
+    {% else %}
+    <div class="error-msg" style="max-width:none;">Sipariş verebilmek için <a href="{{ url_for('giris') }}">giriş yapın</a>.</div>
+    {% endif %}
+
+    {% if urun.description %}
+    <div class="aciklama">{{ urun.description }}</div>
+    {% endif %}
+</div>
+{% endblock %}

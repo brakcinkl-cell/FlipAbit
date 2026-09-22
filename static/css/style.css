@@ -1,0 +1,228 @@
+:root {
+    --navy: #000131;
+    --orange: #ff9501;
+    --green: #34c85a;
+    --gray-text: #46474d;
+    --border: #d9dbe1;
+    --bg: #f4f5f8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: #1a1a1a;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* --- Üst navigasyon (ekran görüntüsündeki navy bar) --- */
+.navbar {
+    background: var(--navy);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 10px 6px;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.navbar a, .navbar button.nav-item {
+    background: none;
+    border: none;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 12px;
+    gap: 4px;
+    cursor: pointer;
+    padding: 4px 8px;
+    min-width: 60px;
+}
+
+.navbar .nav-item .icon { font-size: 20px; line-height: 1; }
+.navbar a.active, .navbar .nav-item.active { color: var(--orange); }
+.navbar a:hover, .navbar .nav-item:hover { color: var(--orange); }
+
+.toggle-x2 {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+}
+
+.switch {
+    position: relative;
+    width: 46px;
+    height: 26px;
+    display: inline-block;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider {
+    position: absolute; inset: 0;
+    background: #7a7c88;
+    border-radius: 999px;
+    transition: 0.2s;
+    cursor: pointer;
+}
+.switch .slider::before {
+    content: "";
+    position: absolute;
+    width: 20px; height: 20px;
+    left: 3px; top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.2s;
+}
+.switch input:checked + .slider { background: var(--green); }
+.switch input:checked + .slider::before { transform: translateX(20px); }
+
+/* --- Genel içerik --- */
+.container { max-width: 720px; margin: 0 auto; padding: 16px; }
+
+/* --- Giriş sayfası --- */
+.login-wrap { text-align: center; padding: 24px 16px; }
+.login-logo { max-width: 320px; width: 80%; margin: 8px auto 0; display: block; }
+
+.form-field {
+    width: 100%;
+    max-width: 420px;
+    margin: 14px auto;
+    display: block;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 16px;
+    background: #fff;
+    text-align: center;
+}
+
+.kvkk-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 18px 0;
+    font-size: 14px;
+    color: var(--gray-text);
+}
+
+.btn-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.btn {
+    padding: 14px 22px;
+    border-radius: 10px;
+    border: none;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-orange { background: var(--orange); color: #fff; }
+.btn-navy { background: var(--navy); color: #fff; }
+.btn-outline { background: #fff; border: 1px solid var(--border); color: var(--navy); }
+
+.error-msg {
+    color: #c0392b;
+    background: #fdecea;
+    border: 1px solid #f5c2bd;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 12px auto;
+    max-width: 420px;
+    font-size: 14px;
+}
+
+.footer-links {
+    margin-top: 24px;
+    font-size: 13px;
+    color: #888;
+}
+
+/* --- Kategori ızgarası --- */
+.kategori-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+}
+.kategori-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    text-align: center;
+    transition: transform 0.15s;
+}
+.kategori-card:hover { transform: translateY(-2px); }
+.kategori-card img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #eee; }
+.kategori-card .ad { padding: 10px 8px; font-size: 13px; font-weight: 600; color: var(--navy); }
+.kategori-card .sayi { font-size: 11px; color: #888; padding-bottom: 8px; }
+
+/* --- Arama / filtre --- */
+.arama-bar {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0;
+}
+.arama-bar input {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 15px;
+}
+
+/* --- Ürün listesi --- */
+.urun-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+}
+.urun-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.urun-card img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #eee; }
+.urun-card .bilgi { padding: 10px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.urun-card .baslik { font-size: 13px; font-weight: 600; color: #222; min-height: 34px; }
+.urun-card .fiyat { font-size: 16px; font-weight: 700; color: var(--navy); }
+.urun-card .stok { font-size: 11px; color: #888; }
+.urun-card form { display: flex; gap: 6px; padding: 0 10px 10px; }
+.urun-card input[type=number] {
+    width: 60px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); text-align: center;
+}
+.urun-card .btn { flex: 1; padding: 8px; font-size: 13px; }
+
+/* --- Ürün detay --- */
+.urun-detay { background: #fff; border-radius: 12px; padding: 18px; }
+.urun-detay img { width: 100%; max-height: 360px; object-fit: contain; background: #f0f0f0; border-radius: 8px; }
+.urun-detay h1 { font-size: 20px; color: var(--navy); }
+.urun-detay .fiyat-buyuk { font-size: 26px; font-weight: 800; color: var(--orange); }
+.urun-detay .aciklama { font-size: 14px; color: var(--gray-text); line-height: 1.5; margin-top: 12px; white-space: pre-wrap; }
+
+/* --- Bekleyen siparişlerim / tablo --- */
+table.siparis-tablosu { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; }
+table.siparis-tablosu th, table.siparis-tablosu td {
+    padding: 10px; border-bottom: 1px solid var(--border); font-size: 14px; text-align: left;
+}
+table.siparis-tablosu th { background: var(--navy); color: #fff; }
+.toplam-satiri { text-align: right; font-weight: 700; margin: 14px 0; font-size: 16px; color: var(--navy); }
+
+.bos-durum { text-align: center; color: #888; padding: 40px 16px; }
+
+@media (max-width: 480px) {
+    .navbar a, .navbar .nav-item { font-size: 10px; min-width: 48px; }
+}

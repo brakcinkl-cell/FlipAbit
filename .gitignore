@@ -1,0 +1,11 @@
+credentials/
+.venv/
+__pycache__/
+*.pyc
+.env
+*.db
+
+# Flipabit'in kendi derlenmiş bundle'ı — üçüncü taraf mülkiyeti, bu repoya girmez
+207.aab/
+*.aab
+

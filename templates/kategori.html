@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ kategori_adi }} - Özdilek Toptan{% endblock %}
+{% block content %}
+<a href="{{ url_for('kategoriler') }}">&larr; Kategoriler</a>
+<h2>{{ kategori_adi }}</h2>
+
+<form class="arama-bar" method="get">
+    <input type="text" name="q" placeholder="Bu kategoride ara..." value="{{ arama }}">
+    <button class="btn btn-outline" type="submit">Ara</button>
+</form>
+
+{% if not urunler %}
+<div class="bos-durum">Bu kategoride ürün bulunamadı.</div>
+{% endif %}
+
+<div class="urun-grid">
+    {% for u in urunler %}
+    <div class="urun-card">
+        <a href="{{ url_for('urun_detay', barkod=u.barkod) }}">
+            {% if u.resim %}<img src="{{ u.resim }}" alt="{{ u.baslik }}" loading="lazy">{% endif %}
+        </a>
+        <div class="bilgi">
+            <a href="{{ url_for('urun_detay', barkod=u.barkod) }}" class="baslik">{{ u.baslik }}</a>
+            <div class="fiyat">{{ "%.2f"|format(u.fiyat) }} ₺</div>
+            <div class="stok">Stok: {{ u.stok }}</div>
+        </div>
+        <form method="post" action="{{ url_for('sepete_ekle') }}">
+            <input type="hidden" name="barkod" value="{{ u.barkod }}">
+            <input type="hidden" name="donus_url" value="{{ request.full_path }}">
+            <input type="number" name="miktar" value="1" min="1" max="{{ u.stok }}">
+            <button class="btn btn-orange" type="submit">Sepete Ekle</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

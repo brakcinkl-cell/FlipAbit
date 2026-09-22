@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Sepetim - Özdilek Toptan{% endblock %}
+{% block content %}
+<h2>Sepetim</h2>
+
+{% if not satirlar %}
+<div class="bos-durum">Sepetinizde ürün yok.</div>
+{% else %}
+<table class="siparis-tablosu">
+    <thead>
+        <tr>
+            <th>Ürün</th>
+            <th>Miktar</th>
+            <th>Birim Fiyat</th>
+            <th>Satır Toplamı</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for s in satirlar %}
+        <tr>
+            <td>{{ s['ürün adı'] }}</td>
+            <td>{{ s['miktar'] }}</td>
+            <td>{{ "%.2f"|format(s['birim fiyat']) }} ₺</td>
+            <td>{{ "%.2f"|format(s['satır toplamı']) }} ₺</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="toplam-satiri">Toplam: {{ "%.2f"|format(toplam) }} ₺</div>
+
+<form method="post" action="{{ url_for('onayla') }}" style="text-align:right;">
+    <button class="btn btn-orange" type="submit">Siparişi Onayla</button>
+</form>
+{% endif %}
+{% endblock %}

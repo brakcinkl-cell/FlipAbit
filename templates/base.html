@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Özdilek Toptan{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<nav class="navbar">
+    <a href="{{ url_for('urun_arama') if kullanici_adi else url_for('giris') }}" class="nav-item">
+        <span class="icon">🔍</span><span>Ürün Arama</span>
+    </a>
+    {% if kullanici_adi %}
+        <a href="{{ url_for('bekleyen_siparislerim') }}" class="nav-item">
+            <span class="icon">📄</span><span>Bekleyen<br>siparişlerim</span>
+        </a>
+        <a href="{{ url_for('cikis') }}" class="nav-item">
+            <span class="icon">⎋</span><span>Çıkış</span>
+        </a>
+    {% else %}
+        <a href="{{ url_for('giris') }}" class="nav-item active">
+            <span class="icon">👤</span><span>Girişe Git</span>
+        </a>
+    {% endif %}
+    <span class="nav-item">
+        <span class="icon">⚙️</span><span>Ayarlar</span>
+    </span>
+    <a href="{{ url_for('sepet') if kullanici_adi else url_for('giris') }}" class="nav-item">
+        <span class="icon">🛒</span><span>Sepete Git</span>
+    </a>
+    <form method="post" action="{{ url_for('ayarlar_fiyat_x2') }}" class="toggle-x2">
+        <label class="switch" title="Fiyatları ×2 göster">
+            <input type="checkbox" onchange="this.form.submit()" {{ 'checked' if fiyat_x2 }}>
+            <span class="slider"></span>
+        </label>
+    </form>
+</nav>
+
+<div class="container">
+    {% block content %}{% endblock %}
+</div>
+</body>
+</html>

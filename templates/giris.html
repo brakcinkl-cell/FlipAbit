@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Giriş - Özdilek Toptan{% endblock %}
+{% block content %}
+<div class="login-wrap">
+    <img class="login-logo" src="{{ url_for('static', filename='images/logo.png') }}" alt="Özdilek Toptan">
+
+    {% if hata %}<div class="error-msg">{{ hata }}</div>{% endif %}
+
+    <form method="post" action="{{ url_for('giris') }}" id="giris-form">
+        <input class="form-field" type="text" name="firma_adi" id="firma_adi"
+               placeholder="Firma adı (veya müşteri kodu)" value="{{ firma_adi or '' }}" autocomplete="off">
+        <input class="form-field" type="text" name="temsilci" id="temsilci"
+               placeholder="Müşteri Temsilcisi Adı" value="{{ temsilci or '' }}">
+        <input class="form-field" type="password" name="sifre" placeholder="Şifre">
+
+        <div class="kvkk-row">
+            <label class="switch">
+                <input type="checkbox" name="kvkk" id="kvkk" checked>
+                <span class="slider"></span>
+            </label>
+            <span>Gizlilik politikasını kabul ediyorum</span>
+        </div>
+
+        <div class="btn-row">
+            <a class="btn btn-navy" href="{{ url_for('urun_arama') }}">Ürünleri Görüntüle</a>
+            <button class="btn btn-orange" type="submit">▶ Giriş</button>
+        </div>
+    </form>
+
+    <div class="footer-links">Gizlilik Politikasına bakın</div>
+</div>
+
+<script>
+// Firma adı alanına bir müşteri kodu yazılırsa (örn. "11..") Firma adı ve
+// Müşteri Temsilcisi Adı'nı tanımlı müşteriler sekmesinden otomatik doldurur.
+const firmaInput = document.getElementById('firma_adi');
+const temsilciInput = document.getElementById('temsilci');
+let lookupTimer = null;
+firmaInput.addEventListener('input', () => {
+    clearTimeout(lookupTimer);
+    const kod = firmaInput.value.trim();
+    if (!kod) return;
+    lookupTimer = setTimeout(async () => {
+        try {
+            const res = await fetch(`/api/musteri-kodu/${encodeURIComponent(kod)}`);
+            const data = await res.json();
+            if (data.found) {
+                firmaInput.value = data.musteriadi;
+                temsilciInput.value = data.temsilci;
+            }
+        } catch (e) { /* sessizce yok say - internet gecikmesi/hatasi giris formunu engellemesin */ }
+    }, 400);
+});
+
+// "Beni hatırla": bir kez başarıyla girilince Firma adı/Temsilci
+// localStorage'da tutulur, sonraki ziyarette otomatik doldurulur.
+(function () {
+    const saved = localStorage.getItem('ozdilek_giris');
+    if (saved) {
+        try {
+            const { firma_adi, temsilci } = JSON.parse(saved);
+            if (!firmaInput.value) firmaInput.value = firma_adi || '';
+            if (!temsilciInput.value) temsilciInput.value = temsilci || '';
+        } catch (e) {}
+    }
+})();
+document.getElementById('giris-form').addEventListener('submit', () => {
+    localStorage.setItem('ozdilek_giris', JSON.stringify({
+        firma_adi: firmaInput.value,
+        temsilci: temsilciInput.value,
+    }));
+});
+</script>
+{% endblock %}
