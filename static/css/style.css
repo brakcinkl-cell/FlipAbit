@@ -1,10 +1,20 @@
 :root {
+    /* Navy/turuncu SADECE üst navigasyon çubuğu ve giriş CTA'sı için
+       (orijinal Özdilek Toptan uygulama ekranından, 2026-09-22 referansı).
+       Geri kalan her yer -- arkaplan/metin/kart/çizgi renkleri -- PDF
+       toptan kataloğunun kendi paletinden (2026-09-22, kullanıcının
+       paylaştığı "1-YATAK ÖRTÜLÜ..." kataloğu, piksel örneklemesiyle
+       çıkarıldı): krem arkaplan, antrasit başlık/fiyat metni, mat gri-bej
+       ayraç/kenarlık. Kullanıcının kendi talimatı: "Navy üst çubuk hariç". */
     --navy: #000131;
     --orange: #ff9501;
     --green: #34c85a;
-    --gray-text: #46474d;
-    --border: #d9dbe1;
-    --bg: #f4f5f8;
+
+    --bg: #fdf8f5;
+    --card-bg: #ffffff;
+    --charcoal: #2b2b2b;
+    --gray-text: #8a8a8a;
+    --border: #ede4da;
 }
 
 * { box-sizing: border-box; }
@@ -13,7 +23,7 @@ body {
     margin: 0;
     font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
     background: var(--bg);
-    color: #1a1a1a;
+    color: var(--charcoal);
 }
 
 a { color: inherit; text-decoration: none; }
@@ -127,8 +137,8 @@ a { color: inherit; text-decoration: none; }
     cursor: pointer;
 }
 .btn-orange { background: var(--orange); color: #fff; }
-.btn-navy { background: var(--navy); color: #fff; }
-.btn-outline { background: #fff; border: 1px solid var(--border); color: var(--navy); }
+.btn-navy { background: var(--charcoal); color: #fff; }
+.btn-outline { background: var(--card-bg); border: 1px solid var(--border); color: var(--charcoal); }
 
 .error-msg {
     color: #c0392b;
@@ -155,7 +165,7 @@ a { color: inherit; text-decoration: none; }
     margin-top: 16px;
 }
 .kategori-card {
-    background: #fff;
+    background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 12px;
     overflow: hidden;
@@ -163,9 +173,9 @@ a { color: inherit; text-decoration: none; }
     transition: transform 0.15s;
 }
 .kategori-card:hover { transform: translateY(-2px); }
-.kategori-card img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #eee; }
-.kategori-card .ad { padding: 10px 8px; font-size: 13px; font-weight: 600; color: var(--navy); }
-.kategori-card .sayi { font-size: 11px; color: #888; padding-bottom: 8px; }
+.kategori-card img { width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--bg); }
+.kategori-card .ad { padding: 10px 8px; font-size: 13px; font-weight: 600; color: var(--charcoal); }
+.kategori-card .sayi { font-size: 11px; color: var(--gray-text); padding-bottom: 8px; }
 
 /* --- Arama / filtre --- */
 .arama-bar {
@@ -188,18 +198,18 @@ a { color: inherit; text-decoration: none; }
     gap: 14px;
 }
 .urun-card {
-    background: #fff;
+    background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 12px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
 }
-.urun-card img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #eee; }
+.urun-card img { width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--bg); }
 .urun-card .bilgi { padding: 10px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.urun-card .baslik { font-size: 13px; font-weight: 600; color: #222; min-height: 34px; }
-.urun-card .fiyat { font-size: 16px; font-weight: 700; color: var(--navy); }
-.urun-card .stok { font-size: 11px; color: #888; }
+.urun-card .baslik { font-size: 13px; font-weight: 600; color: var(--charcoal); min-height: 34px; }
+.urun-card .fiyat { font-size: 16px; font-weight: 700; color: var(--charcoal); }
+.urun-card .stok { font-size: 11px; color: var(--gray-text); }
 .urun-card form { display: flex; gap: 6px; padding: 0 10px 10px; }
 .urun-card input[type=number] {
     width: 60px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); text-align: center;
@@ -207,21 +217,21 @@ a { color: inherit; text-decoration: none; }
 .urun-card .btn { flex: 1; padding: 8px; font-size: 13px; }
 
 /* --- Ürün detay --- */
-.urun-detay { background: #fff; border-radius: 12px; padding: 18px; }
-.urun-detay img { width: 100%; max-height: 360px; object-fit: contain; background: #f0f0f0; border-radius: 8px; }
-.urun-detay h1 { font-size: 20px; color: var(--navy); }
+.urun-detay { background: var(--card-bg); border-radius: 12px; padding: 18px; }
+.urun-detay img { width: 100%; max-height: 360px; object-fit: contain; background: var(--bg); border-radius: 8px; }
+.urun-detay h1 { font-size: 20px; color: var(--charcoal); }
 .urun-detay .fiyat-buyuk { font-size: 26px; font-weight: 800; color: var(--orange); }
 .urun-detay .aciklama { font-size: 14px; color: var(--gray-text); line-height: 1.5; margin-top: 12px; white-space: pre-wrap; }
 
 /* --- Bekleyen siparişlerim / tablo --- */
-table.siparis-tablosu { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; }
+table.siparis-tablosu { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 10px; overflow: hidden; }
 table.siparis-tablosu th, table.siparis-tablosu td {
     padding: 10px; border-bottom: 1px solid var(--border); font-size: 14px; text-align: left;
 }
-table.siparis-tablosu th { background: var(--navy); color: #fff; }
-.toplam-satiri { text-align: right; font-weight: 700; margin: 14px 0; font-size: 16px; color: var(--navy); }
+table.siparis-tablosu th { background: var(--charcoal); color: #fff; }
+.toplam-satiri { text-align: right; font-weight: 700; margin: 14px 0; font-size: 16px; color: var(--charcoal); }
 
-.bos-durum { text-align: center; color: #888; padding: 40px 16px; }
+.bos-durum { text-align: center; color: var(--gray-text); padding: 40px 16px; }
 
 @media (max-width: 480px) {
     .navbar a, .navbar .nav-item { font-size: 10px; min-width: 48px; }

@@ -180,6 +180,31 @@ def _expand_with_adrev(raw_name: str, adrev: dict[str, str]) -> str:
     return tr_title_case(expanded)
 
 
+# Kullanıcının 2026-09-22 talimatı: ürün sayfasında marka adı ve gramaj/tel
+# sayısı bilgisi GÖSTERİLMESİN. icerik_tr serbest metninde bu alanlar
+# "Etiket: değer" şeklinde geçiyor (örn. "...Marka: Özdilek Kalite:...",
+# PDF kataloğunda "Gramaj (gr) / Tel Sayısı: 57 - 61"). DEĞERİ de silmek
+# gerektiği için genel bir "bir sonraki etikete kadar" lookahead'i GÜVENSİZ
+# (marka değeri "Özdilek" gibi kendisi de büyük harfle başlayıp bir sonraki
+# etiket gibi görünebiliyor, canlı veriyle test edilirken yakalandı) --
+# bunun yerine değerin kendi biçimini bilerek eşleşiyoruz: marka her zaman
+# sabit "Özdilek", gramaj/tel sayısı her zaman sayısal.
+_HIDDEN_DESCRIPTION_FIELDS = re.compile(
+    r"Marka\s*:\s*Özdilek\s*"
+    r"|(?:Gramaj\s*\(gr\)\s*/\s*Tel\s*Sayısı|Tel\s*Sayısı|Gramaj)\s*:\s*[\d][\d\s\-–,./]*\s*",
+    re.UNICODE,
+)
+
+
+def _strip_hidden_fields(description: str) -> str:
+    cleaned = _HIDDEN_DESCRIPTION_FIELDS.sub("", description)
+    # icerik_tr metni tipik olarak "Özdilek <ürün adı tekrarı>..." ile
+    # başlıyor (etiketsiz, serbest metin) -- sadece metnin EN BAŞINDAKİ
+    # kelimeyse silinir, cümle içinde geçen başka "Özdilek" dokunulmaz.
+    cleaned = re.sub(r"^Özdilek\s+", "", cleaned.strip())
+    return re.sub(r"\s{2,}", " ", cleaned).strip()
+
+
 def _fetch_icerik_lookup() -> dict[str, str]:
     rows = _fetch_csv_rows(ICERIK_URL)
     result = {}
@@ -265,7 +290,7 @@ def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
             category_code=grup_kodu or None,
             category_name=category_name,
             images=images,
-            description=icerik_lookup.get(barcode, ""),
+            description=_strip_hidden_fields(icerik_lookup.get(barcode, "")),
         ))
 
     logger.info("catalog_source: %d ürün (stok >= %d, fiyat > 0)", len(products), min_stock)
