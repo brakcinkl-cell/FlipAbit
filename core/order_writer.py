@@ -151,6 +151,55 @@ def list_pending(username: str) -> list[dict]:
     return result
 
 
+def _find_sepet_row(ws, username: str, no: str) -> tuple[int, dict] | None:
+    """'FlipaBit_Sepet'te NO'su ve kullanıcı adı eşleşen satırı bulur, sheet
+    satır numarası (1-indexed) + satır sözlüğünü döner. Kullanıcı adı da
+    kontrol edilir ki biri başka bir kullanıcının sepet satırını
+    değiştiremesin/silemesin."""
+    all_values = ws.get_all_values()
+    if not all_values:
+        return None
+    header, data_rows = all_values[0], all_values[1:]
+    for offset, row in enumerate(data_rows, start=2):
+        record = dict(zip(header, row))
+        if record.get("NO", "").strip() == str(no).strip() and record.get("kullanıcı adı", "").strip() == username.strip():
+            return offset, record
+    return None
+
+
+def remove_cart_item(username: str, no: str) -> bool:
+    """Sepetteki (FlipaBit_Sepet) tek bir satırı siler. Kullanıcının
+    2026-09-24 isteği: sepette ürün silme."""
+    ws = _worksheet(SIPARISLER_SHEET)
+    found = _find_sepet_row(ws, username, no)
+    if not found:
+        return False
+    row_number, _ = found
+    ws.delete_rows(row_number)
+    logger.info("order_writer: %s icin NO=%s sepetten silindi", username, no)
+    return True
+
+
+def update_cart_item_qty(username: str, no: str, yeni_miktar: int) -> bool:
+    """Sepetteki bir satırın miktarını (ve satır toplamını) günceller.
+    Kullanıcının 2026-09-24 isteği: sepette adet düzeltme. Miktar çağıran
+    tarafından (app.py) stok üst sınırına göre zaten kırpılmış olmalı."""
+    ws = _worksheet(SIPARISLER_SHEET)
+    found = _find_sepet_row(ws, username, no)
+    if not found:
+        return False
+    row_number, record = found
+    birim_fiyat = _parse_tr_float(record.get("birim fiyat"))
+    yeni_toplam = round(yeni_miktar * birim_fiyat, 2)
+    header = ws.row_values(1)
+    miktar_col = header.index("miktar") + 1
+    toplam_col = header.index("satır toplamı") + 1
+    ws.update_cell(row_number, miktar_col, yeni_miktar)
+    ws.update_cell(row_number, toplam_col, yeni_toplam)
+    logger.info("order_writer: %s icin NO=%s miktar %s yapildi", username, no, yeni_miktar)
+    return True
+
+
 def list_confirmed(username: str) -> list[dict]:
     """Kullanıcının 'FlipaBit_Kesinlesmis'teki (daha önce onayladığı, teslim/
     işlem bekleyen) geçmiş siparişlerini döner - '/bekleyen-siparislerim'

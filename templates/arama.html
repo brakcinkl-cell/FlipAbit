@@ -35,7 +35,7 @@
             {% else %}
             <div class="fiyat fiyat-gizli">Fiyat için giriş yapın</div>
             {% endif %}
-            <div class="stok">{{ u.kategori }} &middot; Stok: {{ u.stok }}</div>
+            <div class="stok">{{ u.kategori }}</div>
         </div>
         {% if kullanici_adi %}
         <form method="post" action="{{ url_for('sepete_ekle') }}">

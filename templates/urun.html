@@ -14,7 +14,7 @@
     {% else %}
     <div class="fiyat-buyuk fiyat-gizli">Fiyat için giriş yapın</div>
     {% endif %}
-    <div class="stok">Stok: {{ urun.stock }} adet &middot; Barkod: {{ urun.barcode }}</div>
+    <div class="stok">Barkod: {{ urun.barcode }}</div>
 
     {% if kullanici_adi %}
     <form method="post" action="{{ url_for('sepete_ekle') }}" style="margin-top:16px; display:flex; gap:10px; align-items:center;">

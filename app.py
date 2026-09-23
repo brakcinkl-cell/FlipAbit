@@ -288,6 +288,12 @@ def sepet():
     'Sepete Git'. Onayla burada -> FlipaBit_Kesinlesmis'e taşınır."""
     order_writer.ensure_worksheets()
     satirlar = order_writer.list_pending(session["kullanici_adi"])
+    # Miktar düzenleme inputundaki max için güncel stoğu satıra ekle.
+    if satirlar:
+        products = catalog_source.fetch_catalog()
+        stok_by_barkod = {p.barcode: p.stock for p in products}
+        for s in satirlar:
+            s["guncel_stok"] = stok_by_barkod.get(s.get("barkod", "").lstrip("'"), s["miktar"])
     toplam = round(sum(s["satır toplamı"] for s in satirlar), 2) if satirlar else 0
     return render_template("sepet.html", satirlar=satirlar, toplam=toplam)
 
@@ -296,6 +302,35 @@ def sepet():
 @login_required
 def onayla():
     order_writer.confirm_order(session["kullanici_adi"])
+    return redirect(url_for("sepet"))
+
+
+@app.route("/sepet/sil", methods=["POST"])
+@login_required
+def sepet_sil():
+    no = request.form.get("no")
+    if no:
+        order_writer.remove_cart_item(session["kullanici_adi"], no)
+    return redirect(url_for("sepet"))
+
+
+@app.route("/sepet/guncelle", methods=["POST"])
+@login_required
+def sepet_guncelle():
+    no = request.form.get("no")
+    barkod = request.form.get("barkod")
+    try:
+        miktar = int(request.form.get("miktar") or 0)
+    except ValueError:
+        miktar = 0
+
+    if no and miktar > 0:
+        # Güvenlik: guncellenen miktar da STOK dosyasindaki gercek adedi asamaz.
+        products = catalog_source.fetch_catalog()
+        urun = next((p for p in products if p.barcode == barkod), None)
+        if urun:
+            miktar = min(miktar, urun.stock)
+        order_writer.update_cart_item_qty(session["kullanici_adi"], no, miktar)
     return redirect(url_for("sepet"))
 
 

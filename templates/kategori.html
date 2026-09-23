@@ -33,7 +33,6 @@
         <div class="bilgi">
             <a href="{{ url_for('urun_detay', barkod=u.barkod) }}" class="baslik">{{ u.baslik }}</a>
             <div class="fiyat">{{ "%.2f"|format(u.fiyat) }} ₺</div>
-            <div class="stok">Stok: {{ u.stok }}</div>
         </div>
         <form method="post" action="{{ url_for('sepete_ekle') }}">
             <input type="hidden" name="barkod" value="{{ u.barkod }}">

@@ -303,6 +303,17 @@ table.siparis-tablosu th, table.siparis-tablosu td {
 table.siparis-tablosu th { background: var(--charcoal); color: #fff; }
 .toplam-satiri { text-align: right; font-weight: 700; margin: 14px 0; font-size: 16px; color: var(--charcoal); }
 
+.sepet-miktar-form { display: flex; gap: 6px; align-items: center; }
+.sepet-miktar-form input[type=number] {
+    width: 60px; padding: 6px; border-radius: 6px; border: 1px solid var(--border); text-align: center;
+}
+.sepet-guncelle-btn { padding: 6px 10px; font-size: 14px; }
+.sepet-sil-btn {
+    background: none; border: 1px solid var(--border); color: #c0392b;
+    border-radius: 6px; padding: 6px 10px; font-size: 14px; cursor: pointer;
+}
+.sepet-sil-btn:hover { background: #fdecea; }
+
 .bos-durum { text-align: center; color: var(--gray-text); padding: 40px 16px; }
 
 .gizlilik-metni {

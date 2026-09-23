@@ -13,15 +13,29 @@
             <th>Miktar</th>
             <th>Birim Fiyat</th>
             <th>Satır Toplamı</th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
         {% for s in satirlar %}
         <tr>
             <td>{{ s['ürün adı'] }}</td>
-            <td>{{ s['miktar'] }}</td>
+            <td>
+                <form method="post" action="{{ url_for('sepet_guncelle') }}" class="sepet-miktar-form">
+                    <input type="hidden" name="no" value="{{ s['NO'] }}">
+                    <input type="hidden" name="barkod" value="{{ s['barkod'] }}">
+                    <input type="number" name="miktar" value="{{ s['miktar'] }}" min="1" max="{{ s['guncel_stok'] }}">
+                    <button class="btn btn-outline sepet-guncelle-btn" type="submit" title="Miktarı güncelle">↻</button>
+                </form>
+            </td>
             <td>{{ "%.2f"|format(s['birim fiyat']) }} ₺</td>
             <td>{{ "%.2f"|format(s['satır toplamı']) }} ₺</td>
+            <td>
+                <form method="post" action="{{ url_for('sepet_sil') }}">
+                    <input type="hidden" name="no" value="{{ s['NO'] }}">
+                    <button class="sepet-sil-btn" type="submit" title="Sepetten kaldır">✕</button>
+                </form>
+            </td>
         </tr>
         {% endfor %}
     </tbody>
