@@ -80,6 +80,11 @@ def giris():
     return redirect(url_for("kategoriler"))
 
 
+@app.route("/gizlilik-politikasi")
+def gizlilik_politikasi():
+    return render_template("gizlilik.html")
+
+
 @app.route("/cikis")
 def cikis():
     session.clear()
@@ -244,4 +249,4 @@ def urun_arama():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5300)
+    app.run(host="0.0.0.0", debug=True, port=5300)

@@ -233,6 +233,19 @@ table.siparis-tablosu th { background: var(--charcoal); color: #fff; }
 
 .bos-durum { text-align: center; color: var(--gray-text); padding: 40px 16px; }
 
+.gizlilik-metni {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--charcoal);
+}
+.gizlilik-metni h2 { font-size: 18px; }
+.gizlilik-metni h3 { font-size: 15px; margin-top: 24px; }
+.gizlilik-metni a { color: var(--orange); text-decoration: underline; }
+
 @media (max-width: 480px) {
     .navbar a, .navbar .nav-item { font-size: 10px; min-width: 48px; }
 }
