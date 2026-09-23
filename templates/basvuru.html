@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Bayilik Başvurusu - Özdilek Toptan{% endblock %}
+{% block content %}
+<div class="login-wrap">
+    <img class="login-logo" src="{{ url_for('static', filename='images/logo.png') }}" alt="Özdilek Toptan">
+
+    <p class="basvuru-uyari">
+        ***Toptan fiyatları görmek ve sipariş vermek için lütfen
+        <a href="{{ url_for('giris') }}">giriş yapın</a> veya satıcımız olun.
+    </p>
+
+    {% if basarili %}
+    <div class="basvuru-basarili">
+        Başvurunuz alındı, en kısa sürede sizinle iletişime geçeceğiz.
+    </div>
+    {% else %}
+
+    {% if hata %}<div class="error-msg">{{ hata }}</div>{% endif %}
+
+    <form method="post" action="{{ url_for('basvuru') }}" class="basvuru-form">
+        <input class="form-field" type="text" name="adi" placeholder="Firma / Ad Soyad" value="{{ adi or '' }}" required>
+        <input class="form-field" type="email" name="mail" placeholder="E-posta" value="{{ mail or '' }}" required>
+        <input class="form-field" type="tel" name="telefon" placeholder="Telefon" value="{{ telefon or '' }}" required>
+        <input class="form-field" type="text" name="adres" placeholder="Adres" value="{{ adres or '' }}">
+        <textarea class="form-field basvuru-mesaj" name="mesaj" placeholder="Mesajınız (opsiyonel)">{{ mesaj or '' }}</textarea>
+
+        <div class="btn-row">
+            <button class="btn btn-navy" type="submit">🏢 İletişime Geçin</button>
+        </div>
+    </form>
+    {% endif %}
+
+    <div class="footer-links"><a href="{{ url_for('gizlilik_politikasi') }}">Gizlilik Politikasına bakın</a></div>
+</div>
+{% endblock %}

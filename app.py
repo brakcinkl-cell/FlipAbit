@@ -17,7 +17,7 @@ from functools import wraps
 
 from flask import Flask, redirect, render_template, request, session, url_for, jsonify
 
-from core import catalog_source, order_writer
+from core import catalog_source, mailer, order_writer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -105,6 +105,31 @@ def giris():
     session["firma_adi"] = firma_adi
     session["temsilci"] = temsilci
     return redirect(url_for("kategoriler"))
+
+
+@app.route("/basvuru", methods=["GET", "POST"])
+def basvuru():
+    """Şifresi olmayan yeni müşterilerin başvuru formu - giriş sayfasındaki
+    'Ürünleri Görüntüle' butonu artık arama sayfası yerine buraya götürüyor
+    (kullanıcının 2026-09-24 kararı). Girişsiz erişilebilir."""
+    if request.method == "GET":
+        return render_template("basvuru.html")
+
+    adi = (request.form.get("adi") or "").strip()
+    mail = (request.form.get("mail") or "").strip()
+    telefon = (request.form.get("telefon") or "").strip()
+    adres = (request.form.get("adres") or "").strip()
+    mesaj = (request.form.get("mesaj") or "").strip()
+
+    if not adi or not mail or not telefon:
+        return render_template(
+            "basvuru.html", hata="Firma adı, e-posta ve telefon zorunludur.",
+            adi=adi, mail=mail, telefon=telefon, adres=adres, mesaj=mesaj,
+        ), 400
+
+    order_writer.append_basvuru(adi, mail, telefon, adres, mesaj)
+    mailer.send_basvuru_bildirimi(adi, mail, telefon, adres, mesaj)
+    return render_template("basvuru.html", basarili=True)
 
 
 @app.route("/gizlilik-politikasi")

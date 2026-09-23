@@ -111,6 +111,24 @@ def _parse_tr_float(value: str) -> float:
         return 0.0
 
 
+BASVURU_SHEET = "basvuru"
+
+
+def append_basvuru(adi: str, mail: str, telefon: str, adres: str, mesaj: str) -> None:
+    """Yeni müşteri başvurusunu (şifresi olmayan, 'İletişime Geçin' formundan)
+    orijinal Flipabit uygulamasının da kullandığı 'basvuru' sekmesine yazar
+    (No, Adi, Mail, Telefon, Adres, Mesaj) - 2026-09-24'te zararsız bir test
+    satırıyla bu sekmenin (Siparişler/Kesinlesmis'in aksine) güvenli
+    olduğu doğrulandı, ayrı bir FlipaBit_ sekmesine gerek yok."""
+    ws = _worksheet(BASVURU_SHEET)
+    next_no = _next_no(ws)
+    ws.append_row(
+        [next_no, adi, mail, f"'{telefon}", adres, mesaj],
+        value_input_option="USER_ENTERED",
+    )
+    logger.info("order_writer: yeni basvuru eklendi (No=%s, %s)", next_no, adi)
+
+
 def list_pending(username: str) -> list[dict]:
     """Kullanıcının 'FlipaBit_Sepet'teki (henüz onaylanmamış) satırlarını
     döner - '/bekleyen-siparislerim' sayfası için. get_all_values() (ham
