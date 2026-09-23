@@ -53,11 +53,24 @@ def login_required(view):
     return wrapped
 
 
+def _asset_url(filename: str) -> str:
+    """CSS/JS dosyasının değişiklik zamanına göre ?v= ekler - tarayıcı eski
+    stili önbellekten göstermesin diye (2026-09-24, 'Yeni' rozeti stili hiç
+    uygulanmamış görünüyordu, sebep buydu)."""
+    path = os.path.join(app.static_folder, filename)
+    try:
+        v = int(os.path.getmtime(path))
+    except OSError:
+        v = 0
+    return url_for("static", filename=filename) + f"?v={v}"
+
+
 @app.context_processor
 def inject_globals():
     return {
         "kullanici_adi": session.get("kullanici_adi"),
         "fiyat_x2": session.get("fiyat_x2", False),
+        "asset_url": _asset_url,
     }
 
 
