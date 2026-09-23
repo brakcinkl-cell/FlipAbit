@@ -17,6 +17,7 @@ Kesinlesmis"e taşır (ekler + kaynaktan siler).
 Servis hesabı JSON'ı credentials/ altında, git'e HİÇ girmez (.gitignore).
 """
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -29,7 +30,13 @@ SIPARISLER_SHEET = "FlipaBit_Sepet"
 KESINLESMIS_SHEET = "FlipaBit_Kesinlesmis"
 HEADER = ["NO", "kullanıcı adı", "barkod", "ürün adı", "miktar", "birim fiyat", "satır toplamı", "tarih"]
 
-CREDENTIALS_PATH = Path(__file__).resolve().parent.parent / "credentials" / "excel-to-sheet.json"
+# Render.com'un "Secret File" özelliği dosya adında '/' (alt klasör) kabul
+# etmiyor - orada dosya proje köküne düz "excel-to-sheet.json" olarak
+# yazılıyor. GOOGLE_CREDENTIALS_PATH env var'ı varsa onu kullan (Render),
+# yoksa yerel geliştirmedeki credentials/ klasörüne düş.
+CREDENTIALS_PATH = Path(os.environ.get("GOOGLE_CREDENTIALS_PATH") or (
+    Path(__file__).resolve().parent.parent / "credentials" / "excel-to-sheet.json"
+))
 
 _client = None
 
