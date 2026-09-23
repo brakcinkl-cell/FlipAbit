@@ -15,7 +15,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
-from flask import Flask, redirect, render_template, request, session, url_for, jsonify
+from flask import Flask, flash, redirect, render_template, request, session, url_for, jsonify
 
 from core import catalog_source, mailer, order_writer
 
@@ -67,10 +67,13 @@ def _asset_url(filename: str) -> str:
 
 @app.context_processor
 def inject_globals():
+    kullanici_adi = session.get("kullanici_adi")
+    sepet_sayisi = order_writer.get_cart_count(kullanici_adi) if kullanici_adi else 0
     return {
-        "kullanici_adi": session.get("kullanici_adi"),
+        "kullanici_adi": kullanici_adi,
         "fiyat_x2": session.get("fiyat_x2", False),
         "asset_url": _asset_url,
+        "sepet_sayisi": sepet_sayisi,
     }
 
 
@@ -278,6 +281,7 @@ def sepete_ekle():
         "qty": miktar,
         "price": _effective_price(urun.price),
     }])
+    flash(f"“{urun.title}” sepete eklendi.")
     return redirect(donus_url)
 
 

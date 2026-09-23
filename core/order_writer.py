@@ -18,6 +18,7 @@ Servis hesabı JSON'ı credentials/ altında, git'e HİÇ girmez (.gitignore).
 """
 import logging
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -39,6 +40,27 @@ CREDENTIALS_PATH = Path(os.environ.get("GOOGLE_CREDENTIALS_PATH") or (
 ))
 
 _client = None
+
+# Nav'daki sepet rozeti için kullanıcı başına küçük önbellek (2026-09-24
+# isteği) - her sayfa yüklemesinde Sheets'e ayrı bir istek atmamak için.
+# Kullanıcının KENDİ sepet/ekle/sil/onayla aksiyonlarında anında doğru
+# kalsın diye o an ayrıca invalidate ediliyor, TTL sadece diğer durumlar
+# (başka sekme/cihaz, sheet elle düzenlenmiş) için güvenlik payı.
+_CART_COUNT_TTL_SECONDS = 20
+_cart_count_cache: dict[str, tuple[float, int]] = {}
+
+
+def _invalidate_cart_count(username: str) -> None:
+    _cart_count_cache.pop(username, None)
+
+
+def get_cart_count(username: str) -> int:
+    cached = _cart_count_cache.get(username)
+    if cached and time.time() - cached[0] < _CART_COUNT_TTL_SECONDS:
+        return cached[1]
+    count = len(list_pending(username))
+    _cart_count_cache[username] = (time.time(), count)
+    return count
 
 
 def _get_client() -> gspread.Client:
@@ -95,6 +117,7 @@ def append_cart_items(username: str, items: list[dict]) -> int:
             now_str,
         ])
     ws.append_rows(rows, value_input_option="USER_ENTERED")
+    _invalidate_cart_count(username)
     logger.info("order_writer: %s icin %d satir Sepet'e eklendi", username, len(rows))
     return len(rows)
 
@@ -176,6 +199,7 @@ def remove_cart_item(username: str, no: str) -> bool:
         return False
     row_number, _ = found
     ws.delete_rows(row_number)
+    _invalidate_cart_count(username)
     logger.info("order_writer: %s icin NO=%s sepetten silindi", username, no)
     return True
 
@@ -254,5 +278,6 @@ def confirm_order(username: str) -> int:
     for row_number in sorted(matching_row_numbers, reverse=True):
         ws_source.delete_rows(row_number)
 
+    _invalidate_cart_count(username)
     logger.info("order_writer: %s icin %d satir Kesinlesmis'e tasindi", username, len(matching_rows))
     return len(matching_rows)

@@ -25,7 +25,7 @@
         <span class="icon">👤</span><span>Girişe Git</span>
     </a>
     <a href="{{ url_for('sepet') if kullanici_adi else url_for('giris') }}" class="nav-item">
-        <span class="icon">🛒</span><span>Sepete Git</span>
+        <span class="icon icon-sepet">🛒{% if sepet_sayisi %}<span class="sepet-rozet">{{ sepet_sayisi }}</span>{% endif %}</span><span>Sepete Git</span>
     </a>
     <form method="post" action="{{ url_for('ayarlar_fiyat_x2') }}" class="toggle-x2">
         <label class="switch" title="Fiyatları ×2 göster">
@@ -36,6 +36,11 @@
 </nav>
 
 <div class="container">
+    {% with mesajlar = get_flashed_messages() %}
+        {% if mesajlar %}
+        <div class="flash-mesaj">{{ mesajlar[0] }}</div>
+        {% endif %}
+    {% endwith %}
     {% block content %}{% endblock %}
 </div>
 </body>
