@@ -135,6 +135,24 @@ def basvuru():
     return render_template("basvuru.html", basarili=True)
 
 
+@app.route("/.well-known/assetlinks.json")
+def assetlinks():
+    """Android TWA (Trusted Web Activity) için Digital Asset Links doğrulaması
+    - bu domain'in com.ozdilektotan.app tarafından sahiplenildiğini kanıtlar.
+    SHA256 parmak izi, 207.aab'yi imzalayan GERÇEK keystore'dan alındı
+    (2026-09-23'te doğrulandı, credentials/android_release.keystore)."""
+    return jsonify([{
+        "relation": ["delegate_permission/common.handle_all_urls"],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "com.ozdilektotan.app",
+            "sha256_cert_fingerprints": [
+                "92:CA:C3:32:1E:FB:1E:04:82:56:74:1A:90:BF:3F:A2:48:D3:32:E9:ED:95:26:0F:AE:D2:20:1B:36:40:38:3D"
+            ],
+        },
+    }])
+
+
 @app.route("/gizlilik-politikasi")
 def gizlilik_politikasi():
     return render_template("gizlilik.html")
