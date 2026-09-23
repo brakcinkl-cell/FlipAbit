@@ -9,3 +9,13 @@ __pycache__/
 207.aab/
 *.aab
 
+# Bundletool CLI (üçüncü taraf araç, proje kodu değil)
+bundletool.jar
+
+# Android TWA (Bubblewrap) — build çıktıları ve gradle cache
+android-twa/.gradle/
+android-twa/build/
+android-twa/app/build/
+android-twa/*.apk
+android-twa/local.properties
+
