@@ -19,7 +19,11 @@
         </a>
         <div class="bilgi">
             <a href="{{ url_for('urun_detay', barkod=u.barkod) }}" class="baslik">{{ u.baslik }}</a>
+            {% if kullanici_adi %}
             <div class="fiyat">{{ "%.2f"|format(u.fiyat) }} ₺</div>
+            {% else %}
+            <div class="fiyat fiyat-gizli">Fiyat için giriş yapın</div>
+            {% endif %}
             <div class="stok">{{ u.kategori }} &middot; Stok: {{ u.stok }}</div>
         </div>
         {% if kullanici_adi %}

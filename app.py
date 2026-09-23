@@ -12,6 +12,7 @@ sepete eklenen fiyat ×2'ye katlanır (kullanıcının 2026-09-22 talimatı).
 """
 import logging
 import os
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 from flask import Flask, redirect, render_template, request, session, url_for, jsonify
@@ -23,8 +24,20 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-degistir")
+# Kullanıcının 2026-09-23 talimatı: şifreyi bir kez giren tekrar girmek
+# zorunda kalmasın - oturum tarayıcı kapansa/PC yeniden açılsa da 1 yıl kalıcı.
+app.permanent_session_lifetime = timedelta(days=365)
 
 LOGIN_PASSWORD = "Ozd123"
+# Resminin Cloudinary yükleme tarihi bu kadar gün içindeyse "Yeni" rozeti
+# gösterilir ve kategori içinde başa alınır (kullanıcının 2026-09-23 isteği).
+YENI_URUN_GUN_SAYISI = 21
+
+
+def _yeni_mi(urun) -> bool:
+    if not urun.resim_tarihi:
+        return False
+    return (datetime.now(timezone.utc) - urun.resim_tarihi).days <= YENI_URUN_GUN_SAYISI
 
 
 def _effective_price(base_price: float) -> float:
@@ -74,6 +87,7 @@ def giris():
     if hata:
         return render_template("giris.html", hata=hata, firma_adi=firma_adi, temsilci=temsilci), 400
 
+    session.permanent = True
     session["kullanici_adi"] = f"{firma_adi} / {temsilci}"
     session["firma_adi"] = firma_adi
     session["temsilci"] = temsilci
@@ -116,26 +130,56 @@ def _kategorilere_gore_grupla(products):
     return dict(sorted(kategoriler.items(), key=lambda kv: kv[0]))
 
 
+def _ilk_gecerli_resim(urunler):
+    """Kategori kapak resmi için: ilk ürünün resmi boşsa (bazı ürünlerde
+    hiç resim yok, 2026-09-23'te fark edildi) kategorideki bir SONRAKİ
+    ürünün resmine düşer, tamamen boş kalmasın diye."""
+    for urun in urunler:
+        if urun.images:
+            return urun.images[0]
+    return None
+
+
 @app.route("/kategoriler")
 @login_required
 def kategoriler():
     products = catalog_source.fetch_catalog()
     gruplu = _kategorilere_gore_grupla(products)
     kategori_listesi = [
-        {"ad": ad, "urun_sayisi": len(urunler), "kapak_resim": (urunler[0].images[0] if urunler[0].images else None)}
+        {"ad": ad, "urun_sayisi": len(urunler), "kapak_resim": _ilk_gecerli_resim(urunler)}
         for ad, urunler in gruplu.items()
     ]
     return render_template("kategoriler.html", kategoriler=kategori_listesi)
+
+
+SIRALAMA_SECENEKLERI = {
+    "fiyat_artan": ("Fiyat: Düşükten Yükseğe", lambda p: p.price, False),
+    "fiyat_azalan": ("Fiyat: Yüksekten Düşüğe", lambda p: p.price, True),
+    "isim_az": ("İsim: A-Z", lambda p: p.title.lower(), False),
+    "isim_za": ("İsim: Z-A", lambda p: p.title.lower(), True),
+}
 
 
 @app.route("/kategori/<path:kategori_adi>")
 @login_required
 def kategori_urunleri(kategori_adi):
     q = (request.args.get("q") or "").strip().lower()
+    sirala = request.args.get("sirala") or ""
     products = catalog_source.fetch_catalog()
     urunler = [p for p in products if (p.category_name or "Diğer") == kategori_adi]
     if q:
         urunler = [p for p in urunler if q in p.title.lower() or q in p.barcode]
+    if sirala in SIRALAMA_SECENEKLERI:
+        _, anahtar, tersten = SIRALAMA_SECENEKLERI[sirala]
+        urunler = sorted(urunler, key=anahtar, reverse=tersten)
+    else:
+        # Varsayılan: resmi son 3 hafta içinde eklenen ürünler başa gelsin
+        # (en yeni resim en üstte), geri kalanı mevcut sırasında kalsın
+        # (kullanıcının 2026-09-23 isteği - stabil sort ile sağlanıyor).
+        urunler = sorted(
+            urunler,
+            key=lambda p: (0, -p.resim_tarihi.timestamp()) if _yeni_mi(p) else (1, 0),
+        )
 
     sonuc = [
         {
@@ -144,10 +188,14 @@ def kategori_urunleri(kategori_adi):
             "fiyat": _effective_price(p.price),
             "stok": p.stock,
             "resim": p.images[0] if p.images else None,
+            "yeni": _yeni_mi(p),
         }
         for p in urunler
     ]
-    return render_template("kategori.html", kategori_adi=kategori_adi, urunler=sonuc, arama=q)
+    return render_template(
+        "kategori.html", kategori_adi=kategori_adi, urunler=sonuc, arama=q,
+        sirala=sirala, siralama_secenekleri=SIRALAMA_SECENEKLERI,
+    )
 
 
 @app.route("/urun/<barkod>")

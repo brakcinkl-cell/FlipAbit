@@ -6,6 +6,12 @@
 
 <form class="arama-bar" method="get">
     <input type="text" name="q" placeholder="Bu kategoride ara..." value="{{ arama }}">
+    <select name="sirala" onchange="this.form.submit()">
+        <option value="">Sıralama</option>
+        {% for deger, bilgi in siralama_secenekleri.items() %}
+        <option value="{{ deger }}" {{ "selected" if sirala == deger }}>{{ bilgi[0] }}</option>
+        {% endfor %}
+    </select>
     <button class="btn btn-outline" type="submit">Ara</button>
 </form>
 
@@ -16,7 +22,8 @@
 <div class="urun-grid">
     {% for u in urunler %}
     <div class="urun-card">
-        <a href="{{ url_for('urun_detay', barkod=u.barkod) }}">
+        <a href="{{ url_for('urun_detay', barkod=u.barkod) }}" style="position:relative; display:block;">
+            {% if u.yeni %}<span class="yeni-rozet">Yeni</span>{% endif %}
             {% if u.resim %}<img src="{{ u.resim }}" alt="{{ u.baslik }}" loading="lazy">{% endif %}
         </a>
         <div class="bilgi">

@@ -5,7 +5,11 @@
 <div class="urun-detay">
     {% if urun.images %}<img src="{{ urun.images[0] }}" alt="{{ urun.title }}">{% endif %}
     <h1>{{ urun.title }}</h1>
+    {% if kullanici_adi %}
     <div class="fiyat-buyuk">{{ "%.2f"|format(fiyat) }} ₺</div>
+    {% else %}
+    <div class="fiyat-buyuk fiyat-gizli">Fiyat için giriş yapın</div>
+    {% endif %}
     <div class="stok">Stok: {{ urun.stock }} adet &middot; Barkod: {{ urun.barcode }}</div>
 
     {% if kullanici_adi %}

@@ -22,6 +22,7 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
 import requests
 
@@ -227,6 +228,30 @@ class Product:
     category_name: str | None
     images: list[str] = field(default_factory=list)
     description: str = ""
+    resim_tarihi: datetime | None = None
+
+
+# Cloudinary URL'lerindeki "/v1746104308/" gibi sürüm segmenti aslında o
+# görselin Cloudinary'e YÜKLENDİĞİ an'ın Unix zaman damgası (Cloudinary'nin
+# kendi otomatik versiyonlama davranışı) -- kullanıcının 2026-09-23 isteği
+# "resmi yeni eklenen ürünleri ayırt edebilir miyiz" için gerçek bir tarih
+# kaynağı olarak kullanılıyor (sheet'lerde ayrı bir "eklenme tarihi" sütunu
+# yok). Sadece Cloudinary CDN'inden gelen resimlerde çalışır -- diğer CDN
+# (örn. img-ozdilekteyim.mncdn.com, 'resimler' sekmesinden) bu deseni
+# içermez, o durumda None döner ve ürün "yeni" sayılmaz (güvenli varsayılan).
+_CLOUDINARY_VERSION_RE = re.compile(r"/v(\d{9,10})/")
+
+
+def _resim_yukleme_tarihi(image_url: str | None) -> datetime | None:
+    if not image_url:
+        return None
+    match = _CLOUDINARY_VERSION_RE.search(image_url)
+    if not match:
+        return None
+    try:
+        return datetime.fromtimestamp(int(match.group(1)), tz=timezone.utc)
+    except (ValueError, OSError):
+        return None
 
 
 def fetch_catalog(min_stock: int = MIN_STOCK, force_refresh: bool = False) -> list[Product]:
@@ -304,6 +329,7 @@ def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
             category_name=category_name,
             images=images,
             description=_strip_hidden_fields(icerik_lookup.get(barcode, "")),
+            resim_tarihi=_resim_yukleme_tarihi(images[0] if images else None),
         ))
 
     logger.info("catalog_source: %d ürün (stok >= %d, fiyat > 0)", len(products), min_stock)

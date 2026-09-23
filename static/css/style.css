@@ -190,6 +190,14 @@ a { color: inherit; text-decoration: none; }
     border: 1px solid var(--border);
     font-size: 15px;
 }
+.arama-bar select {
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+    background: var(--card-bg);
+    color: var(--charcoal);
+}
 
 /* --- Ürün listesi --- */
 .urun-grid {
@@ -209,6 +217,12 @@ a { color: inherit; text-decoration: none; }
 .urun-card .bilgi { padding: 10px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
 .urun-card .baslik { font-size: 13px; font-weight: 600; color: var(--charcoal); min-height: 34px; }
 .urun-card .fiyat { font-size: 16px; font-weight: 700; color: var(--charcoal); }
+.fiyat-gizli { color: var(--gray-text) !important; font-weight: 500 !important; font-style: italic; }
+.yeni-rozet {
+    position: absolute; top: 8px; left: 8px; z-index: 1;
+    background: var(--orange); color: #fff; font-size: 11px; font-weight: 700;
+    padding: 3px 9px; border-radius: 999px; letter-spacing: 0.02em;
+}
 .urun-card .stok { font-size: 11px; color: var(--gray-text); }
 .urun-card form { display: flex; gap: 6px; padding: 0 10px 10px; }
 .urun-card input[type=number] {
