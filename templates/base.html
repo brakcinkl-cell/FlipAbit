@@ -15,14 +15,10 @@
         <a href="{{ url_for('bekleyen_siparislerim') }}" class="nav-item">
             <span class="icon">📄</span><span>Bekleyen<br>siparişlerim</span>
         </a>
-        <a href="{{ url_for('cikis') }}" class="nav-item">
-            <span class="icon">⎋</span><span>Çıkış</span>
-        </a>
-    {% else %}
-        <a href="{{ url_for('giris') }}" class="nav-item active">
-            <span class="icon">👤</span><span>Girişe Git</span>
-        </a>
     {% endif %}
+    <a href="{{ url_for('giris') }}" class="nav-item {{ 'active' if not kullanici_adi }}">
+        <span class="icon">👤</span><span>Girişe Git</span>
+    </a>
     <a href="{{ url_for('sepet') if kullanici_adi else url_for('giris') }}" class="nav-item">
         <span class="icon">🛒</span><span>Sepete Git</span>
     </a>
