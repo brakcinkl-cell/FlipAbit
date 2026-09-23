@@ -20,6 +20,7 @@ import io
 import logging
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
 import requests
@@ -245,12 +246,24 @@ def fetch_catalog(min_stock: int = MIN_STOCK, force_refresh: bool = False) -> li
 
 
 def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
-    stok_rows = _fetch_csv_rows(STOK_URL)
-    grup_lookup = _fetch_grup_lookup()
-    resimler_lookup = _fetch_resimler_lookup()
-    trad_lookup = _fetch_katalog_trad()
-    adrev = _fetch_adrev_dict()
-    icerik_lookup = _fetch_icerik_lookup()
+    # 6 ayrı Google Sheets isteği - sırayla değil PARALEL (ThreadPoolExecutor).
+    # Render.com'un free tier'ında sıralı çekim gunicorn'un worker timeout'unu
+    # (varsayılan 30sn) aşıp worker'ın SIGKILL'lenmesine yol açtı (2026-09-23,
+    # canlı ortamda yakalandı) - paralel çekim bunu ~6 kat hızlandırır.
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        f_stok = executor.submit(_fetch_csv_rows, STOK_URL)
+        f_grup = executor.submit(_fetch_grup_lookup)
+        f_resimler = executor.submit(_fetch_resimler_lookup)
+        f_trad = executor.submit(_fetch_katalog_trad)
+        f_adrev = executor.submit(_fetch_adrev_dict)
+        f_icerik = executor.submit(_fetch_icerik_lookup)
+
+        stok_rows = f_stok.result()
+        grup_lookup = f_grup.result()
+        resimler_lookup = f_resimler.result()
+        trad_lookup = f_trad.result()
+        adrev = f_adrev.result()
+        icerik_lookup = f_icerik.result()
 
     products: list[Product] = []
     for row in stok_rows:
