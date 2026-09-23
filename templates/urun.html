@@ -3,7 +3,11 @@
 {% block content %}
 <a href="javascript:history.back()">&larr; Geri</a>
 <div class="urun-detay">
-    {% if urun.images %}<img src="{{ urun.images[0] }}" alt="{{ urun.title }}">{% endif %}
+    {% if urun.images %}
+    <img src="{{ urun.images[0] }}" alt="{{ urun.title }}">
+    {% else %}
+    <div class="resim-yok">Hazırlanıyor</div>
+    {% endif %}
     <h1>{{ urun.title }}</h1>
     {% if kullanici_adi %}
     <div class="fiyat-buyuk">{{ "%.2f"|format(fiyat) }} ₺</div>

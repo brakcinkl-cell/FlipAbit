@@ -15,7 +15,11 @@
     {% for u in urunler %}
     <div class="urun-card">
         <a href="{{ url_for('urun_detay', barkod=u.barkod) }}">
-            {% if u.resim %}<img src="{{ u.resim }}" alt="{{ u.baslik }}" loading="lazy">{% endif %}
+            {% if u.resim %}
+            <img src="{{ u.resim }}" alt="{{ u.baslik }}" loading="lazy">
+            {% else %}
+            <div class="resim-yok">Hazırlanıyor</div>
+            {% endif %}
         </a>
         <div class="bilgi">
             <a href="{{ url_for('urun_detay', barkod=u.barkod) }}" class="baslik">{{ u.baslik }}</a>
