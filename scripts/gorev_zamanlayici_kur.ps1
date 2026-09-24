@@ -17,8 +17,8 @@ $ErrorActionPreference = "Stop"
 $ProjectRoot   = "C:\Users\DESKTOP-3KS3D8E\Desktop\Python Test\Claude-Projects\FlipaBit"
 $PythonwExe    = Join-Path $ProjectRoot ".venv\Scripts\pythonw.exe"
 $AppScript     = Join-Path $ProjectRoot "app.py"
-$TunnelConfig  = Join-Path $ProjectRoot "credentials\cloudflared_tunnel_config.yml"
-$CloudflaredExe = "C:\Program Files (x86)\cloudflared\cloudflared.exe"
+$TunnelVbs     = Join-Path $ProjectRoot "scripts\tunnel_gizli_baslat.vbs"
+$WscriptExe    = "$env:WINDIR\System32\wscript.exe"
 
 $CommonSettings = New-ScheduledTaskSettingsSet `
     -Hidden `
@@ -38,9 +38,12 @@ Register-ScheduledTask -TaskName "FlipaBit-Sunucu" -Action $ServerAction -Trigge
     -Description "FlipaBit / Ozdilek Toptan Flask sunucusu (app.py, port 5300) -- oturum acilisinda otomatik baslar" -Force
 
 # --- Gorev 2: Cloudflare Tunnel ---
-$TunnelAction = New-ScheduledTaskAction -Execute $CloudflaredExe -Argument "tunnel --config `"$TunnelConfig`" run" -WorkingDirectory $ProjectRoot
+# cloudflared.exe gercek bir konsol uygulamasi oldugundan dogrudan cagirilirsa
+# oturum acilisinda gorunur bir pencere acar; wscript.exe + gizli .vbs sarmalayicisi
+# ile tamamen penceresiz calistiriyoruz.
+$TunnelAction = New-ScheduledTaskAction -Execute $WscriptExe -Argument "`"$TunnelVbs`"" -WorkingDirectory $ProjectRoot
 Register-ScheduledTask -TaskName "FlipaBit-Tunnel" -Action $TunnelAction -Trigger $Trigger -Settings $CommonSettings `
-    -Description "FlipaBit / toptan.ozgunaydin.com.tr icin ayri Cloudflare Tunnel (flipabit-toptan) -- oturum acilisinda otomatik baslar" -Force
+    -Description "FlipaBit / toptan.ozgunaydin.com.tr icin ayri Cloudflare Tunnel (flipabit-toptan) -- oturum acilisinda otomatik baslar, penceresiz" -Force
 
 Write-Host "Gorevler kaydedildi: FlipaBit-Sunucu, FlipaBit-Tunnel"
 Write-Host "Kontrol icin: Get-ScheduledTask -TaskName 'FlipaBit-*'"
