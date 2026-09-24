@@ -139,15 +139,22 @@ def basvuru():
 def assetlinks():
     """Android TWA (Trusted Web Activity) için Digital Asset Links doğrulaması
     - bu domain'in com.ozdilektotan.app tarafından sahiplenildiğini kanıtlar.
-    SHA256 parmak izi, 207.aab'yi imzalayan GERÇEK keystore'dan alındı
-    (2026-09-23'te doğrulandı, credentials/android_release.keystore)."""
+    İki fingerprint listeleniyor:
+    - Upload key (credentials/android_release.keystore, 207.aab'yi imzalayan GERÇEK
+      keystore, 2026-09-23'te doğrulandı): sideload/test için, cihazda Play Store
+      kurulumu yoksa kullanılan imza.
+    - Play App Signing anahtarı (Play Console > Uygulama imzalama'dan 2026-09-24'te
+      indirilen deployment_cert.der ile doğrulandı): Google'ın Play Store üzerinden
+      dağıtırken GERÇEKTEN imzaladığı sertifika - bu olmadan TWA, uygulama Play'den
+      kurulduktan sonra doğrulanamaz ve tam ekran yerine adres çubuklu açılır."""
     return jsonify([{
         "relation": ["delegate_permission/common.handle_all_urls"],
         "target": {
             "namespace": "android_app",
             "package_name": "com.ozdilektotan.app",
             "sha256_cert_fingerprints": [
-                "92:CA:C3:32:1E:FB:1E:04:82:56:74:1A:90:BF:3F:A2:48:D3:32:E9:ED:95:26:0F:AE:D2:20:1B:36:40:38:3D"
+                "92:CA:C3:32:1E:FB:1E:04:82:56:74:1A:90:BF:3F:A2:48:D3:32:E9:ED:95:26:0F:AE:D2:20:1B:36:40:38:3D",
+                "3F:57:9E:A7:C0:4A:C7:7E:C2:A4:6B:34:70:76:13:3A:5E:5C:38:7A:92:D8:5D:B7:E6:9A:50:91:81:12:10:4F",
             ],
         },
     }])
