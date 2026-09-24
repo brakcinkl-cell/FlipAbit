@@ -19,6 +19,7 @@ import csv
 import io
 import logging
 import re
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -369,3 +370,32 @@ def fetch_customers(force_refresh: bool = False) -> dict[str, Customer]:
     _customers_cache = (time.time(), result)
     logger.info("catalog_source: %d tanımlı müşteri okundu", len(result))
     return result
+
+
+# TTL dolduğunda İLK isteği yapan ziyaretçi 6 Google Sheets isteğinin
+# bitmesini (~2sn, bazen ağa göre daha da uzun) senkron beklemek zorunda
+# kalıyordu ("Ürünleri Görüntüle" geçişinin yavaş hissettirmesi, kullanıcının
+# 2026-09-24 şikayeti). Bunun yerine önbelleği hiçbir isteği bloklamadan
+# arka planda, süresi dolmadan ÖNCE tazeleyen bir daemon thread - ziyaretçiler
+# her zaman zaten-hazır önbellekten okur.
+_BACKGROUND_REFRESH_INTERVAL = max(_CACHE_TTL_SECONDS - 30, 30)
+
+
+def _background_refresh_loop() -> None:
+    while True:
+        try:
+            fetch_catalog(force_refresh=True)
+            fetch_customers(force_refresh=True)
+        except Exception:
+            # Bir turda Sheets erişilemezse eski (hâlâ geçerli) önbellek
+            # korunur - fetch_catalog/fetch_customers exception fırlatınca
+            # önbelleği güncellemiyor, sadece burada loglanıp bir sonraki
+            # turda tekrar denenir.
+            logger.exception("catalog_source: arka plan yenileme başarısız, mevcut önbellek korunuyor")
+        time.sleep(_BACKGROUND_REFRESH_INTERVAL)
+
+
+def start_background_refresh() -> None:
+    """Sunucu başlarken bir kez çağrılır: önbelleği hemen doldurur, sonra
+    periyodik olarak arka planda tazeler."""
+    threading.Thread(target=_background_refresh_loop, daemon=True).start()

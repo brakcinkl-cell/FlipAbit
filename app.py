@@ -399,4 +399,8 @@ def urun_arama():
 
 
 if __name__ == "__main__":
+    # debug=True reloader iki süreç açar (izleyici + gerçek işçi) - arka plan
+    # tazelemeyi sadece gerçek işçide başlat, izleyicide değil.
+    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        catalog_source.start_background_refresh()
     app.run(host="0.0.0.0", debug=True, port=5300)
