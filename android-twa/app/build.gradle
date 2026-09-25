@@ -51,12 +51,12 @@ def twaManifest = [
 ]
 
 android {
-    compileSdkVersion 33
+    compileSdkVersion 36
     namespace "com.ozdilektotan.app"
     defaultConfig {
         applicationId "com.ozdilektotan.app"
         minSdkVersion 27
-        targetSdkVersion 33
+        targetSdkVersion 36
         versionCode 208
         versionName "47.4"
 
@@ -208,6 +208,6 @@ repositories {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     
-        implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+        implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.2'
     
 }
