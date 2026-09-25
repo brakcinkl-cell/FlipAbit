@@ -263,10 +263,14 @@ def update_cart_item_qty(username: str, no: str, yeni_miktar: int) -> bool:
     birim_fiyat = _parse_tr_float(record.get("birim fiyat"))
     yeni_toplam = round(yeni_miktar * birim_fiyat, 2)
     header = ws.row_values(1)
-    miktar_col = header.index("miktar") + 1
-    toplam_col = header.index("satır toplamı") + 1
-    ws.update_cell(row_number, miktar_col, yeni_miktar)
-    ws.update_cell(row_number, toplam_col, yeni_toplam)
+    miktar_harf = gspread.utils.rowcol_to_a1(1, header.index("miktar") + 1)[:-1]
+    toplam_harf = gspread.utils.rowcol_to_a1(1, header.index("satır toplamı") + 1)[:-1]
+    # ÖNCEDEN iki ayrı update_cell() cagrisi vardi - tek batch_update'e
+    # indirildi (kullanıcının 2026-09-25 "yavaş süreçleri bul" talebi).
+    ws.batch_update([
+        {"range": f"{miktar_harf}{row_number}", "values": [[yeni_miktar]]},
+        {"range": f"{toplam_harf}{row_number}", "values": [[yeni_toplam]]},
+    ])
     logger.info("order_writer: %s icin NO=%s miktar %s yapildi", username, no, yeni_miktar)
     return True
 
@@ -321,9 +325,22 @@ def confirm_order(username: str) -> int:
 
     ws_target.append_rows(matching_rows, value_input_option="USER_ENTERED")
 
-    # Yukarıdan aşağı silersek satır numaraları kayar - en alttan yukarı sil.
-    for row_number in sorted(matching_row_numbers, reverse=True):
-        ws_source.delete_rows(row_number)
+    # ÖNCEDEN her satır için ayrı delete_rows() çağrılıyordu - 10 ürünlü bir
+    # siparişte 10 ayrı Sheets isteği demekti (birkaç saniye ekliyordu,
+    # kullanıcının 2026-09-25 "yavaş süreçleri bul" talebiyle yakalandı).
+    # Artık hepsi TEK bir batchUpdate isteğinde (deleteDimension listesi)
+    # gönderiliyor. Yukarıdan aşağı silersek satır numaraları kayar - en
+    # alttan yukarı sıralama şart, batchUpdate istekleri de sırayla
+    # uygulandığı için bu sıralama burada da korunuyor.
+    sheet_id = ws_source.id
+    delete_requests = [
+        {"deleteDimension": {"range": {
+            "sheetId": sheet_id, "dimension": "ROWS",
+            "startIndex": row_number - 1, "endIndex": row_number,
+        }}}
+        for row_number in sorted(matching_row_numbers, reverse=True)
+    ]
+    ws_source.spreadsheet.batch_update({"requests": delete_requests})
 
     _set_cart_count(username, 0)  # tum bekleyen satirlar tasindi, sepet artik bos
     logger.info("order_writer: %s icin %d satir Kesinlesmis'e tasindi", username, len(matching_rows))

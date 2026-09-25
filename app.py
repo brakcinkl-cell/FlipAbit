@@ -12,6 +12,7 @@ sepete eklenen fiyat ×2'ye katlanır (kullanıcının 2026-09-22 talimatı).
 """
 import logging
 import os
+import threading
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
@@ -130,8 +131,17 @@ def basvuru():
             adi=adi, mail=mail, telefon=telefon, adres=adres, mesaj=mesaj,
         ), 400
 
-    order_writer.append_basvuru(adi, mail, telefon, adres, mesaj)
-    mailer.send_basvuru_bildirimi(adi, mail, telefon, adres, mesaj)
+    # Sheets yazma + mail gönderme arka planda olur, kullanıcı beklemez
+    # (kullanıcının 2026-09-25 "yavaş süreçleri bul" talebi - bu route daha
+    # önce ikisinin de bitmesini senkron bekliyordu, ~2-5sn).
+    def _arka_planda_isle():
+        try:
+            order_writer.append_basvuru(adi, mail, telefon, adres, mesaj)
+        except Exception:
+            logger.exception("basvuru: sheet'e yazma başarısız")
+        mailer.send_basvuru_bildirimi(adi, mail, telefon, adres, mesaj)
+
+    threading.Thread(target=_arka_planda_isle, daemon=True).start()
     return render_template("basvuru.html", basarili=True)
 
 
@@ -340,9 +350,16 @@ def onayla():
     satirlar = order_writer.list_pending(kullanici_adi)
     toplam = round(sum(s["satır toplamı"] for s in satirlar), 2) if satirlar else 0
 
+    # confirm_order SENKRON kalıyor - hemen ardından /sepet güncel (artık
+    # boş) durumu okuyor, arka plana alınırsa yarış durumu olur. Mail ise
+    # yan etki, kullanıcıyı bekletmeden arka planda gönderilir.
     order_writer.confirm_order(kullanici_adi)
     if satirlar:
-        mailer.send_siparis_onay_bildirimi(kullanici_adi, satirlar, toplam)
+        threading.Thread(
+            target=mailer.send_siparis_onay_bildirimi,
+            args=(kullanici_adi, satirlar, toplam),
+            daemon=True,
+        ).start()
     return redirect(url_for("sepet"))
 
 
