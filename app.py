@@ -334,7 +334,14 @@ def sepet():
 @app.route("/onayla", methods=["POST"])
 @login_required
 def onayla():
-    order_writer.confirm_order(session["kullanici_adi"])
+    kullanici_adi = session["kullanici_adi"]
+    # E-posta içeriği için satırları taşımadan (confirm_order) ÖNCE al.
+    satirlar = order_writer.list_pending(kullanici_adi)
+    toplam = round(sum(s["satır toplamı"] for s in satirlar), 2) if satirlar else 0
+
+    order_writer.confirm_order(kullanici_adi)
+    if satirlar:
+        mailer.send_siparis_onay_bildirimi(kullanici_adi, satirlar, toplam)
     return redirect(url_for("sepet"))
 
 
