@@ -292,7 +292,6 @@ def sepete_ekle():
     # Güvenlik: sipariş miktarı STOK dosyasındaki gerçek adedi aşamaz.
     miktar = min(miktar, urun.stock)
 
-    order_writer.ensure_worksheets()
     order_writer.append_cart_items(session["kullanici_adi"], [{
         "barcode": urun.barcode,
         "title": urun.title,
@@ -319,7 +318,6 @@ def sepete_ekle():
 def sepet():
     """Şu anki, HENÜZ ONAYLANMAMIŞ sepet (FlipaBit_Sepet) - nav'daki
     'Sepete Git'. Onayla burada -> FlipaBit_Kesinlesmis'e taşınır."""
-    order_writer.ensure_worksheets()
     satirlar = order_writer.list_pending(session["kullanici_adi"])
     # Miktar düzenleme inputundaki max için güncel stoğu satıra ekle.
     if satirlar:
@@ -380,7 +378,6 @@ def bekleyen_siparislerim():
     """Kullanıcının DAHA ÖNCE onayladığı, FlipaBit_Kesinlesmis'teki geçmiş
     siparişleri - nav'daki 'Bekleyen siparişlerim' (teslim/işlem bekleyen,
     şu anki sepet DEĞİL)."""
-    order_writer.ensure_worksheets()
     satirlar = order_writer.list_confirmed(session["kullanici_adi"])
     toplam = round(sum(s["satır toplamı"] for s in satirlar), 2) if satirlar else 0
     return render_template("bekleyen.html", satirlar=satirlar, toplam=toplam)
@@ -415,7 +412,13 @@ def urun_arama():
 
 if __name__ == "__main__":
     # debug=True reloader iki süreç açar (izleyici + gerçek işçi) - arka plan
-    # tazelemeyi sadece gerçek işçide başlat, izleyicide değil.
+    # tazelemeyi ve tek seferlik kurulumu sadece gerçek işçide başlat.
+    # ensure_worksheets() eskiden /sepete-ekle, /sepet, /bekleyen-siparislerim
+    # route'larının HER isteğinde çağrılıyordu (tüm sekmeleri listeleyen
+    # ekstra bir Sheets isteği, ~1.5sn) - "sepete ekle çok uzun sürüyor"
+    # şikayeti (2026-09-25) buradan geliyordu, sekmeler zaten var olduğu
+    # için pratikte hiçbir zaman bir şey yapmıyordu. Artık sadece başlangıçta.
     if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
         catalog_source.start_background_refresh()
+        order_writer.ensure_worksheets()
     app.run(host="0.0.0.0", debug=True, port=5300)

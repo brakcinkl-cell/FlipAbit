@@ -44,14 +44,27 @@ _client = None
 # Nav'daki sepet rozeti için kullanıcı başına küçük önbellek (2026-09-24
 # isteği) - her sayfa yüklemesinde Sheets'e ayrı bir istek atmamak için.
 # Kullanıcının KENDİ sepet/ekle/sil/onayla aksiyonlarında anında doğru
-# kalsın diye o an ayrıca invalidate ediliyor, TTL sadece diğer durumlar
+# kalsın diye o an ayrıca güncelleniyor, TTL sadece diğer durumlar
 # (başka sekme/cihaz, sheet elle düzenlenmiş) için güvenlik payı.
+#
+# ÖNCEDEN invalidate (cache'i tamamen silip bir sonraki okumada Sheets'ten
+# yeniden çekmek) yapılıyordu - AJAX sepete-ekle akışında bu, kullanıcıya
+# yanıt dönmeden önce EK bir Sheets isteği (list_pending, ~1-2sn) demekti
+# ("sepete ekle çok uzun sürüyor" şikayeti, 2026-09-25). Artık sayı zaten
+# bildiğimiz delta kadar yerinde (in-place) güncelleniyor, ekstra istek yok.
 _CART_COUNT_TTL_SECONDS = 20
 _cart_count_cache: dict[str, tuple[float, int]] = {}
 
 
-def _invalidate_cart_count(username: str) -> None:
-    _cart_count_cache.pop(username, None)
+def _bump_cart_count(username: str, delta: int) -> None:
+    cached = _cart_count_cache.get(username)
+    if cached:
+        _cart_count_cache[username] = (cached[0], max(0, cached[1] + delta))
+    # Önbellekte hiç yoksa dokunma - bir sonraki get_cart_count zaten taze çeker.
+
+
+def _set_cart_count(username: str, count: int) -> None:
+    _cart_count_cache[username] = (time.time(), count)
 
 
 def get_cart_count(username: str) -> int:
@@ -117,7 +130,7 @@ def append_cart_items(username: str, items: list[dict]) -> int:
             now_str,
         ])
     ws.append_rows(rows, value_input_option="USER_ENTERED")
-    _invalidate_cart_count(username)
+    _bump_cart_count(username, len(rows))
     logger.info("order_writer: %s icin %d satir Sepet'e eklendi", username, len(rows))
     return len(rows)
 
@@ -199,7 +212,7 @@ def remove_cart_item(username: str, no: str) -> bool:
         return False
     row_number, _ = found
     ws.delete_rows(row_number)
-    _invalidate_cart_count(username)
+    _bump_cart_count(username, -1)
     logger.info("order_writer: %s icin NO=%s sepetten silindi", username, no)
     return True
 
@@ -278,6 +291,6 @@ def confirm_order(username: str) -> int:
     for row_number in sorted(matching_row_numbers, reverse=True):
         ws_source.delete_rows(row_number)
 
-    _invalidate_cart_count(username)
+    _set_cart_count(username, 0)  # tum bekleyen satirlar tasindi, sepet artik bos
     logger.info("order_writer: %s icin %d satir Kesinlesmis'e tasindi", username, len(matching_rows))
     return len(matching_rows)
