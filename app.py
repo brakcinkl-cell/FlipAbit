@@ -292,7 +292,10 @@ def sepete_ekle():
     # Güvenlik: sipariş miktarı STOK dosyasındaki gerçek adedi aşamaz.
     miktar = min(miktar, urun.stock)
 
-    order_writer.append_cart_items(session["kullanici_adi"], [{
+    # Sheets yazma arka planda olur, kullanıcı beklemez - sepet sayacı hemen
+    # (iyimser) güncellenir (kullanıcının 2026-09-25 isteği, bkz. order_writer
+    # .append_cart_items_async docstring'i).
+    order_writer.append_cart_items_async(session["kullanici_adi"], [{
         "barcode": urun.barcode,
         "title": urun.title,
         "qty": miktar,

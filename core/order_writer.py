@@ -18,6 +18,7 @@ Servis hesabı JSON'ı credentials/ altında, git'e HİÇ girmez (.gitignore).
 """
 import logging
 import os
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -107,9 +108,11 @@ def _next_no(ws) -> int:
     return max(numbers, default=0) + 1
 
 
-def append_cart_items(username: str, items: list[dict]) -> int:
+def _append_cart_items_sync(username: str, items: list[dict]) -> int:
     """items: [{"barcode": str, "title": str, "qty": int, "price": float}, ...].
-    Her ürün için 'FlipaBit_Sepet'e bir satır ekler (satır toplamı = miktar × birim fiyat)."""
+    Her ürün için 'FlipaBit_Sepet'e bir satır ekler (satır toplamı = miktar × birim fiyat).
+    Gerçek Sheets yazma kısmı - sepet sayacına DOKUNMAZ, onu çağıran (senkron
+    veya arka plan) sürüm yönetir."""
     if not items:
         return 0
     ws = _worksheet(SIPARISLER_SHEET)
@@ -130,9 +133,40 @@ def append_cart_items(username: str, items: list[dict]) -> int:
             now_str,
         ])
     ws.append_rows(rows, value_input_option="USER_ENTERED")
-    _bump_cart_count(username, len(rows))
     logger.info("order_writer: %s icin %d satir Sepet'e eklendi", username, len(rows))
     return len(rows)
+
+
+def append_cart_items(username: str, items: list[dict]) -> int:
+    """Senkron sürüm - Sheets yazma bitene kadar bekler. /sepet gibi Sheets
+    durumunu hemen bilmesi gereken yerler için."""
+    sayi = _append_cart_items_sync(username, items)
+    if sayi:
+        _bump_cart_count(username, sayi)
+    return sayi
+
+
+def append_cart_items_async(username: str, items: list[dict]) -> None:
+    """AJAX sepete-ekle için: sepet sayacı HEMEN (iyimser) güncellenir, gerçek
+    Sheets yazma arka plan thread'ine bırakılır - çağıran taraf (app.py)
+    kullanıcıyı Sheets'in cevap vermesini beklemeden yanıtlayabilir
+    (kullanıcının 2026-09-25 isteği: 'sepete ekleme Sheets'e yine yazsın
+    ama kullanıcıyı bekletmeden'). Arka planda yazma gerçekten başarısız
+    olursa (nadiren) sayaç geri alınır ve loglanır; /sepet sayfası her
+    zaman Sheets'in kendisini okuduğu için veri kaybı olmaz, sadece nav
+    rozeti kısa süreliğine (birkaç saniye) yanlış olabilir."""
+    if not items:
+        return
+    _bump_cart_count(username, len(items))
+
+    def _arka_planda_yaz():
+        try:
+            _append_cart_items_sync(username, items)
+        except Exception:
+            logger.exception("order_writer: arka plan sepete ekleme başarısız (%s)", username)
+            _bump_cart_count(username, -len(items))
+
+    threading.Thread(target=_arka_planda_yaz, daemon=True).start()
 
 
 def _parse_tr_float(value: str) -> float:
