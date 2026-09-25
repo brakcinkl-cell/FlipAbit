@@ -57,8 +57,8 @@ android {
         applicationId "com.ozdilektotan.app"
         minSdkVersion 27
         targetSdkVersion 36
-        versionCode 208
-        versionName "47.4"
+        versionCode 209
+        versionName "47.5"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
