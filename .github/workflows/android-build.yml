@@ -28,10 +28,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
-
+      # ubuntu-latest runner'ında Android SDK zaten kurulu geliyor
+      # (ANDROID_HOME/ANDROID_SDK_ROOT hazır) - android-actions/setup-android@v3
+      # eylemi artık Google'ın kaldırdığı eski bir "tools" paketini kurmaya
+      # çalışıp başarısız oluyordu, o yüzden kaldırıldı. Sadece eksik olan
+      # platform 36'yı runner'ın kendi sdkmanager'ıyla kuruyoruz.
       - name: Android SDK platform 36 kur
-        run: yes | sdkmanager "platforms;android-36" "build-tools;36.0.0"
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
 
       - name: gradlew calistirilabilir yap
         run: chmod +x gradlew
