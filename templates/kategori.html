@@ -4,8 +4,8 @@
 <a href="{{ url_for('kategoriler') }}">&larr; Kategoriler</a>
 <h2>{{ kategori_adi }}</h2>
 
-<form class="arama-bar" method="get">
-    <input type="text" name="q" placeholder="Bu kategoride ara..." value="{{ arama }}">
+<form class="arama-bar" id="kategori-arama-form" method="get">
+    <input type="text" name="q" id="kategori-arama-kutusu" placeholder="Bu kategoride ara..." value="{{ arama }}" autocomplete="off">
     <select name="sirala" onchange="this.form.submit()">
         <option value="">Sıralama</option>
         {% for deger, bilgi in siralama_secenekleri.items() %}
@@ -19,9 +19,9 @@
 <div class="bos-durum">Bu kategoride ürün bulunamadı.</div>
 {% endif %}
 
-<div class="urun-grid">
+<div class="urun-grid" id="kategori-urun-grid">
     {% for u in urunler %}
-    <div class="urun-card">
+    <div class="urun-card" data-baslik="{{ u.baslik|lower }}" data-barkod="{{ u.barkod }}">
         <a href="{{ url_for('urun_detay', barkod=u.barkod) }}" style="position:relative; display:block;">
             {% if u.yeni %}<span class="yeni-rozet">Yeni</span>{% endif %}
             {% if u.resim %}
@@ -43,4 +43,36 @@
     </div>
     {% endfor %}
 </div>
+<div class="bos-durum" id="kategori-arama-bos-durum" hidden>Aramanızla eşleşen ürün bulunamadı.</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var kutu = document.getElementById('kategori-arama-kutusu');
+    var form = document.getElementById('kategori-arama-form');
+    var grid = document.getElementById('kategori-urun-grid');
+    var bosDurum = document.getElementById('kategori-arama-bos-durum');
+    if (!kutu || !grid) return;
+
+    function filtrele() {
+        var q = kutu.value.trim().toLowerCase();
+        var kartlar = grid.querySelectorAll('.urun-card');
+        var gorunenSayi = 0;
+        kartlar.forEach(function (kart) {
+            var eslesiyor = !q || kart.dataset.baslik.indexOf(q) !== -1 || kart.dataset.barkod.indexOf(q) !== -1;
+            kart.hidden = !eslesiyor;
+            if (eslesiyor) gorunenSayi++;
+        });
+        if (bosDurum) bosDurum.hidden = gorunenSayi > 0;
+    }
+
+    // Kategori içi arama, sunucuya gitmeden anında (client-side) filtreler -
+    // "tüm aramalar canlı olsun" (kullanıcının 2026-09-25 isteği).
+    kutu.addEventListener('input', filtrele);
+    filtrele();
+
+    form.addEventListener('submit', function (e) { e.preventDefault(); });
+})();
+</script>
 {% endblock %}

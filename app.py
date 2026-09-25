@@ -196,23 +196,13 @@ def _kategorilere_gore_grupla(products):
     return dict(sorted(kategoriler.items(), key=lambda kv: kv[0]))
 
 
-def _ilk_gecerli_resim(urunler):
-    """Kategori kapak resmi için: ilk ürünün resmi boşsa (bazı ürünlerde
-    hiç resim yok, 2026-09-23'te fark edildi) kategorideki bir SONRAKİ
-    ürünün resmine düşer, tamamen boş kalmasın diye."""
-    for urun in urunler:
-        if urun.images:
-            return urun.images[0]
-    return None
-
-
 @app.route("/kategoriler")
 @login_required
 def kategoriler():
     products = catalog_source.fetch_catalog()
     gruplu = _kategorilere_gore_grupla(products)
     kategori_listesi = [
-        {"ad": ad, "urun_sayisi": len(urunler), "kapak_resim": _ilk_gecerli_resim(urunler)}
+        {"ad": ad, "urun_sayisi": len(urunler)}
         for ad, urunler in gruplu.items()
     ]
     return render_template("kategoriler.html", kategoriler=kategori_listesi)
@@ -292,8 +282,11 @@ def sepete_ekle():
     urun = next((p for p in products if p.barcode == barkod), None)
 
     donus_url = request.form.get("donus_url") or url_for("kategoriler")
+    ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
     if not urun or miktar <= 0:
+        if ajax:
+            return jsonify({"ok": False}), 400
         return redirect(donus_url)
 
     # Güvenlik: sipariş miktarı STOK dosyasındaki gerçek adedi aşamaz.
@@ -306,6 +299,17 @@ def sepete_ekle():
         "qty": miktar,
         "price": _effective_price(urun.price),
     }])
+
+    if ajax:
+        # Ürün ızgarasından (kategori/arama) AJAX ile gelen istek - sayfa
+        # yenilenmesin diye JSON dönülür (bkz. static/js/app.js).
+        return jsonify({
+            "ok": True,
+            "urun_adi": urun.title,
+            "miktar": miktar,
+            "sepet_sayisi": order_writer.get_cart_count(session["kullanici_adi"]),
+        })
+
     flash(f"“{urun.title}” sepete eklendi.")
     return redirect(donus_url)
 
@@ -395,6 +399,10 @@ def urun_arama():
         }
         for p in products[:200]
     ]
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.args.get("partial"):
+        # Canlı arama (bkz. templates/arama.html'deki JS) - sadece kart
+        # ızgarasını döner, tüm sayfayı değil.
+        return render_template("_urun_kartlari.html", urunler=sonuc, arama=q)
     return render_template("arama.html", urunler=sonuc, arama=q)
 
 

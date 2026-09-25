@@ -4,18 +4,42 @@
 <h2>Kategoriler</h2>
 {% if not kategoriler %}
 <div class="bos-durum">Katalogda ürün bulunamadı.</div>
-{% endif %}
-<div class="kategori-grid">
+{% else %}
+<form class="arama-bar" id="kategoriler-arama-form" onsubmit="return false;">
+    <input type="text" id="kategoriler-arama-kutusu" placeholder="Kategori ara..." autocomplete="off" autofocus>
+</form>
+<div class="kategori-liste" id="kategoriler-liste">
     {% for k in kategoriler %}
-    <a class="kategori-card" href="{{ url_for('kategori_urunleri', kategori_adi=k.ad) }}">
-        {% if k.kapak_resim %}
-            <img src="{{ k.kapak_resim }}" alt="{{ k.ad }}" loading="lazy">
-        {% else %}
-            <div class="resim-yok">Ürün Görseli Hazırlanıyor</div>
-        {% endif %}
-        <div class="ad">{{ k.ad }}</div>
-        <div class="sayi">{{ k.urun_sayisi }} ürün</div>
+    <a class="kategori-satir" href="{{ url_for('kategori_urunleri', kategori_adi=k.ad) }}" data-ad="{{ k.ad|lower }}">
+        <span class="ad">{{ k.ad }}</span>
+        <span class="sayi">{{ k.urun_sayisi }} ürün</span>
+        <span class="ok">&rsaquo;</span>
     </a>
     {% endfor %}
 </div>
+<div class="bos-durum" id="kategoriler-arama-bos-durum" hidden>Aramanızla eşleşen kategori bulunamadı.</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var kutu = document.getElementById('kategoriler-arama-kutusu');
+    var liste = document.getElementById('kategoriler-liste');
+    var bosDurum = document.getElementById('kategoriler-arama-bos-durum');
+    if (!kutu || !liste) return;
+
+    kutu.addEventListener('input', function () {
+        var q = kutu.value.trim().toLowerCase();
+        var satirlar = liste.querySelectorAll('.kategori-satir');
+        var gorunenSayi = 0;
+        satirlar.forEach(function (satir) {
+            var eslesiyor = !q || satir.dataset.ad.indexOf(q) !== -1;
+            satir.hidden = !eslesiyor;
+            if (eslesiyor) gorunenSayi++;
+        });
+        if (bosDurum) bosDurum.hidden = gorunenSayi > 0;
+    });
+})();
+</script>
 {% endblock %}

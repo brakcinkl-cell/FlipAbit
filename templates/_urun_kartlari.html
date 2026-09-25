@@ -1,0 +1,34 @@
+{% if arama and not urunler %}
+<div class="bos-durum">Sonuç bulunamadı.</div>
+{% endif %}
+
+<div class="urun-grid">
+    {% for u in urunler %}
+    <div class="urun-card">
+        <a href="{{ url_for('urun_detay', barkod=u.barkod) }}">
+            {% if u.resim %}
+            <img src="{{ u.resim }}" alt="{{ u.baslik }}" loading="lazy">
+            {% else %}
+            <div class="resim-yok">Ürün Görseli Hazırlanıyor</div>
+            {% endif %}
+        </a>
+        <div class="bilgi">
+            <a href="{{ url_for('urun_detay', barkod=u.barkod) }}" class="baslik">{{ u.baslik }}</a>
+            {% if kullanici_adi %}
+            <div class="fiyat">{{ "%.2f"|format(u.fiyat) }} ₺</div>
+            {% else %}
+            <div class="fiyat fiyat-gizli">Fiyat için giriş yapın</div>
+            {% endif %}
+            <div class="stok">{{ u.kategori }}</div>
+        </div>
+        {% if kullanici_adi %}
+        <form method="post" action="{{ url_for('sepete_ekle') }}">
+            <input type="hidden" name="barkod" value="{{ u.barkod }}">
+            <input type="hidden" name="donus_url" value="{{ request.full_path }}">
+            <input type="number" name="miktar" value="1" min="1" max="{{ u.stok }}">
+            <button class="btn btn-orange" type="submit">Sepete Ekle</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>

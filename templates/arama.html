@@ -9,43 +9,52 @@
 </p>
 {% endif %}
 <h2>Ürün Arama</h2>
-<form class="arama-bar" method="get">
-    <input type="text" name="q" placeholder="Ürün adı veya barkod..." value="{{ arama }}" autofocus>
+<form class="arama-bar" id="urun-arama-form" method="get">
+    <input type="text" name="q" id="urun-arama-kutusu" placeholder="Ürün adı veya barkod..." value="{{ arama }}" autofocus autocomplete="off">
     <button class="btn btn-outline" type="submit">Ara</button>
 </form>
 
-{% if arama and not urunler %}
-<div class="bos-durum">Sonuç bulunamadı.</div>
-{% endif %}
-
-<div class="urun-grid">
-    {% for u in urunler %}
-    <div class="urun-card">
-        <a href="{{ url_for('urun_detay', barkod=u.barkod) }}">
-            {% if u.resim %}
-            <img src="{{ u.resim }}" alt="{{ u.baslik }}" loading="lazy">
-            {% else %}
-            <div class="resim-yok">Ürün Görseli Hazırlanıyor</div>
-            {% endif %}
-        </a>
-        <div class="bilgi">
-            <a href="{{ url_for('urun_detay', barkod=u.barkod) }}" class="baslik">{{ u.baslik }}</a>
-            {% if kullanici_adi %}
-            <div class="fiyat">{{ "%.2f"|format(u.fiyat) }} ₺</div>
-            {% else %}
-            <div class="fiyat fiyat-gizli">Fiyat için giriş yapın</div>
-            {% endif %}
-            <div class="stok">{{ u.kategori }}</div>
-        </div>
-        {% if kullanici_adi %}
-        <form method="post" action="{{ url_for('sepete_ekle') }}">
-            <input type="hidden" name="barkod" value="{{ u.barkod }}">
-            <input type="hidden" name="donus_url" value="{{ request.full_path }}">
-            <input type="number" name="miktar" value="1" min="1" max="{{ u.stok }}">
-            <button class="btn btn-orange" type="submit">Sepete Ekle</button>
-        </form>
-        {% endif %}
-    </div>
-    {% endfor %}
+<div id="urun-sonuclari">
+    {% include "_urun_kartlari.html" %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var kutu = document.getElementById('urun-arama-kutusu');
+    var form = document.getElementById('urun-arama-form');
+    var sonuclar = document.getElementById('urun-sonuclari');
+    if (!kutu || !sonuclar) return;
+
+    var zamanlayici = null;
+
+    function canliAra() {
+        var q = kutu.value.trim();
+        var url = form.action || window.location.pathname;
+        var parametreler = new URLSearchParams({ q: q, partial: '1' });
+        fetch(url + '?' + parametreler.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                sonuclar.innerHTML = html;
+                var yeniUrl = window.location.pathname + (q ? '?q=' + encodeURIComponent(q) : '');
+                window.history.replaceState(null, '', yeniUrl);
+            })
+            .catch(function () { /* ağ hatasında sessizce vazgeç, kullanıcı Ara'ya basabilir */ });
+    }
+
+    kutu.addEventListener('input', function () {
+        clearTimeout(zamanlayici);
+        zamanlayici = setTimeout(canliAra, 300);
+    });
+
+    // Form submit (Enter/Ara butonu) hâlâ çalışır ama artık sayfa
+    // yenilemeden aynı canlı aramayı tetikler.
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearTimeout(zamanlayici);
+        canliAra();
+    });
+})();
+</script>
 {% endblock %}

@@ -24,7 +24,7 @@
                 <form method="post" action="{{ url_for('sepet_guncelle') }}" class="sepet-miktar-form">
                     <input type="hidden" name="no" value="{{ s['NO'] }}">
                     <input type="hidden" name="barkod" value="{{ s['barkod'] }}">
-                    <input type="number" name="miktar" value="{{ s['miktar'] }}" min="1" max="{{ s['guncel_stok'] }}">
+                    <input type="number" name="miktar" value="{{ s['miktar'] }}" min="1" max="{{ s['guncel_stok'] }}" onchange="this.form.requestSubmit()">
                     <button class="btn btn-outline sepet-guncelle-btn" type="submit" title="Miktarı güncelle">↻</button>
                 </form>
             </td>

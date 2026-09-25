@@ -1,3 +1,8 @@
+/* JS canlı filtrelerin (.hidden = true) çalışması için - .kategori-satir ve
+   .urun-card kendi "display" değerini tanımladığından tarayıcının varsayılan
+   [hidden]{display:none} kuralını eziyor, burada açıkça geri veriliyor. */
+[hidden] { display: none !important; }
+
 :root {
     /* Navy/turuncu SADECE üst navigasyon çubuğu ve giriş CTA'sı için
        (orijinal Özdilek Toptan uygulama ekranından, 2026-09-22 referansı).
@@ -195,26 +200,29 @@ a { color: inherit; text-decoration: none; }
     border-radius: 10px; padding: 18px; max-width: 420px; margin: 12px auto; font-size: 15px;
 }
 
-/* --- Kategori ızgarası --- */
-.kategori-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 14px;
+/* --- Kategori listesi (resimsiz, tek sütun - çok kategori arasında
+   bulmayı kolaylaştırmak için, kullanıcının 2026-09-25 isteği) --- */
+.kategori-liste {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     margin-top: 16px;
 }
-.kategori-card {
+.kategori-satir {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     background: var(--card-bg);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    text-align: center;
-    transition: transform 0.15s;
+    border-radius: 10px;
+    padding: 14px 16px;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
 }
-.kategori-card:hover { transform: translateY(-2px); }
-.kategori-card img { width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--bg); }
-.kategori-card .resim-yok { border-bottom: none; }
-.kategori-card .ad { padding: 10px 8px; font-size: 13px; font-weight: 600; color: var(--charcoal); }
-.kategori-card .sayi { font-size: 11px; color: var(--gray-text); padding-bottom: 8px; }
+.kategori-satir:hover { background: var(--bg); transform: translateX(2px); }
+.kategori-satir .ad { flex: 1; font-size: 15px; font-weight: 600; color: var(--charcoal); }
+.kategori-satir .sayi { font-size: 12px; color: var(--gray-text); white-space: nowrap; }
+.kategori-satir .ok { font-size: 20px; color: var(--gray-text); line-height: 1; }
 
 /* --- Arama / filtre --- */
 .arama-bar {
@@ -295,6 +303,7 @@ a { color: inherit; text-decoration: none; }
     width: 60px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); text-align: center;
 }
 .urun-card .btn { flex: 1; padding: 8px; font-size: 13px; }
+.btn-eklendi { background: var(--green) !important; border-color: var(--green) !important; }
 
 /* --- Ürün detay --- */
 .urun-detay { background: var(--card-bg); border-radius: 12px; padding: 18px; }
