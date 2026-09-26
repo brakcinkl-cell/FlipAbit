@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 .env
 *.db
+logs/
 
 # Flipabit'in kendi derlenmiş bundle'ı — üçüncü taraf mülkiyeti, bu repoya girmez
 207.aab/

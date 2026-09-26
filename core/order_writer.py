@@ -101,6 +101,13 @@ def ensure_worksheets() -> None:
             logger.info("order_writer: '%s' sekmesi oluşturuldu", name)
 
 
+# Sıra numarası (NO) "son NO'yu oku + 1 ile yaz" şeklinde üretildiği için iki
+# eşzamanlı ekleme (sepete ekleme artık arka planda) aynı NO'yu alabiliyordu;
+# aynı kullanıcı için olursa sil/güncelle yanlış satıra giderdi. Oku+yaz
+# çifti bu kilitle sıraya sokuluyor (2026-09-27 gözden geçirmesi).
+_yazma_kilidi = threading.Lock()
+
+
 def _next_no(ws) -> int:
     """İlk kolondaki (NO) mevcut en büyük değerin bir fazlası. Boşsa 1."""
     col = ws.col_values(1)[1:]  # başlığı atla
@@ -117,22 +124,23 @@ def _append_cart_items_sync(username: str, items: list[dict]) -> int:
         return 0
     ws = _worksheet(SIPARISLER_SHEET)
     now_str = datetime.now(timezone.utc).astimezone().strftime("%d.%m.%Y %H:%M")
-    next_no = _next_no(ws)
+    with _yazma_kilidi:
+        next_no = _next_no(ws)
 
-    rows = []
-    for i, item in enumerate(items):
-        line_total = round(item["qty"] * item["price"], 2)
-        rows.append([
-            next_no + i,
-            username,
-            f"'{item['barcode']}",  # basiyle zorla metin - onculu sifirlar (00..) sayi yuvarlamasinda kaybolmasin
-            item["title"],
-            item["qty"],
-            item["price"],
-            line_total,
-            now_str,
-        ])
-    ws.append_rows(rows, value_input_option="USER_ENTERED")
+        rows = []
+        for i, item in enumerate(items):
+            line_total = round(item["qty"] * item["price"], 2)
+            rows.append([
+                next_no + i,
+                username,
+                f"'{item['barcode']}",  # basiyle zorla metin - onculu sifirlar (00..) sayi yuvarlamasinda kaybolmasin
+                item["title"],
+                item["qty"],
+                item["price"],
+                line_total,
+                now_str,
+            ])
+        ws.append_rows(rows, value_input_option="USER_ENTERED")
     logger.info("order_writer: %s icin %d satir Sepet'e eklendi", username, len(rows))
     return len(rows)
 
@@ -191,11 +199,12 @@ def append_basvuru(adi: str, mail: str, telefon: str, adres: str, mesaj: str) ->
     satırıyla bu sekmenin (Siparişler/Kesinlesmis'in aksine) güvenli
     olduğu doğrulandı, ayrı bir FlipaBit_ sekmesine gerek yok."""
     ws = _worksheet(BASVURU_SHEET)
-    next_no = _next_no(ws)
-    ws.append_row(
-        [next_no, adi, mail, f"'{telefon}", adres, mesaj],
-        value_input_option="USER_ENTERED",
-    )
+    with _yazma_kilidi:
+        next_no = _next_no(ws)
+        ws.append_row(
+            [next_no, adi, mail, f"'{telefon}", adres, mesaj],
+            value_input_option="USER_ENTERED",
+        )
     logger.info("order_writer: yeni basvuru eklendi (No=%s, %s)", next_no, adi)
 
 
@@ -275,13 +284,43 @@ def update_cart_item_qty(username: str, no: str, yeni_miktar: int) -> bool:
     return True
 
 
+# FlipaBit_Kesinlesmis her siparişle sonsuza kadar büyüyor ve /bekleyen-
+# siparislerim her açılışta TAMAMINI okuyordu (2026-09-27 gözden geçirmesi).
+# İki önlem: (1) ham okuma tüm kullanıcılar için ortak 60sn önbellekte
+# (confirm_order'da hemen geçersiz kılınır ki onaydan sonra yeni sipariş
+# görünsün), (2) sadece son BEKLEYEN_GUN_SAYISI gün gösterilir - daha eskisi
+# çoktan teslim edilmiş kabul edilir.
+BEKLEYEN_GUN_SAYISI = 90
+_KESINLESMIS_CACHE_TTL_SECONDS = 60
+_kesinlesmis_cache: tuple[float, list[list[str]]] | None = None
+
+
+def _kesinlesmis_tum_satirlar() -> list[list[str]]:
+    global _kesinlesmis_cache
+    if _kesinlesmis_cache is not None and time.time() - _kesinlesmis_cache[0] < _KESINLESMIS_CACHE_TTL_SECONDS:
+        return _kesinlesmis_cache[1]
+    all_values = _worksheet(KESINLESMIS_SHEET).get_all_values()
+    _kesinlesmis_cache = (time.time(), all_values)
+    return all_values
+
+
+def _tarih_yeni_mi(tarih_metni: str, gun: int) -> bool:
+    """'dd.mm.YYYY HH:MM' biçimindeki sheet tarihi son `gun` gün içindeyse
+    True; boş/bozuk tarih GÖSTERİLİR (yanlışlıkla gizlemektense)."""
+    try:
+        t = datetime.strptime((tarih_metni or "").strip(), "%d.%m.%Y %H:%M")
+    except ValueError:
+        return True
+    return (datetime.now() - t).days <= gun
+
+
 def list_confirmed(username: str) -> list[dict]:
     """Kullanıcının 'FlipaBit_Kesinlesmis'teki (daha önce onayladığı, teslim/
-    işlem bekleyen) geçmiş siparişlerini döner - '/bekleyen-siparislerim'
-    sayfası için (kullanıcının 2026-09-22 düzeltmesi: bu sayfa ŞU ANKİ
-    sepeti değil, GEÇMİŞ onaylanmış siparişleri gösterir)."""
-    ws = _worksheet(KESINLESMIS_SHEET)
-    all_values = ws.get_all_values()
+    işlem bekleyen) son BEKLEYEN_GUN_SAYISI günlük siparişlerini döner -
+    '/bekleyen-siparislerim' sayfası için (kullanıcının 2026-09-22
+    düzeltmesi: bu sayfa ŞU ANKİ sepeti değil, GEÇMİŞ onaylanmış
+    siparişleri gösterir)."""
+    all_values = _kesinlesmis_tum_satirlar()
     if not all_values:
         return []
     header, data_rows = all_values[0], all_values[1:]
@@ -290,6 +329,8 @@ def list_confirmed(username: str) -> list[dict]:
     for row in data_rows:
         record = dict(zip(header, row))
         if record.get("kullanıcı adı", "").strip() != username.strip():
+            continue
+        if not _tarih_yeni_mi(record.get("tarih", ""), BEKLEYEN_GUN_SAYISI):
             continue
         record["miktar"] = int(_parse_tr_float(record.get("miktar")))
         record["birim fiyat"] = _parse_tr_float(record.get("birim fiyat"))
@@ -343,5 +384,7 @@ def confirm_order(username: str) -> int:
     ws_source.spreadsheet.batch_update({"requests": delete_requests})
 
     _set_cart_count(username, 0)  # tum bekleyen satirlar tasindi, sepet artik bos
+    global _kesinlesmis_cache
+    _kesinlesmis_cache = None  # /bekleyen-siparislerim yeni siparişi hemen görsün
     logger.info("order_writer: %s icin %d satir Kesinlesmis'e tasindi", username, len(matching_rows))
     return len(matching_rows)

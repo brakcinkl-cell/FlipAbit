@@ -12,22 +12,44 @@ sepete eklenen fiyat ×2'ye katlanır (kullanıcının 2026-09-22 talimatı).
 """
 import logging
 import os
+import secrets
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 from functools import wraps
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for, jsonify
 
 from core import catalog_source, mailer, order_writer
 
-logging.basicConfig(level=logging.INFO)
+# Sunucu pythonw.exe (konsolsuz) ile çalıştığı için stderr'e giden loglar
+# kayboluyordu - arka plandaki Sheets/mail hataları görünmez kalıyordu.
+# Artık logs/app.log'a dönen dosya logu da var (2 MB x 5).
+_LOG_DIR = Path(__file__).resolve().parent / "logs"
+_LOG_DIR.mkdir(exist_ok=True)
+_dosya_handler = RotatingFileHandler(_LOG_DIR / "app.log", maxBytes=2_000_000, backupCount=5, encoding="utf-8")
+_dosya_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+logging.basicConfig(level=logging.INFO, handlers=[_dosya_handler, logging.StreamHandler()])
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-degistir")
+# Sabit bir varsayılan anahtar YOK: kaynak koddaki bir anahtarla herkes sahte
+# oturum çerezi üretebilirdi. Ortam değişkeni yoksa her açılışta rastgele
+# üretilir (oturumlar yeniden başlatmada düşer) ve yüksek sesle loglanır.
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
+if not os.environ.get("FLASK_SECRET_KEY"):
+    logger.error("FLASK_SECRET_KEY ayarlı değil - geçici rastgele anahtar kullanılıyor, oturumlar yeniden başlatmada düşecek")
 # Kullanıcının 2026-09-23 talimatı: şifreyi bir kez giren tekrar girmek
 # zorunda kalmasın - oturum tarayıcı kapansa/PC yeniden açılsa da 1 yıl kalıcı.
 app.permanent_session_lifetime = timedelta(days=365)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+# Canlı site Cloudflare üzerinden HTTPS; Secure çerez http://localhost veya
+# LAN IP'sinden yapılan testlerde gönderilmez (giriş "tutmaz"). Öyle bir test
+# için FLIPABIT_HTTP_TEST=1 ile geçici olarak kapatılabilir.
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLIPABIT_HTTP_TEST") != "1"
 
 LOGIN_PASSWORD = "Ozd123"
 # Resminin Cloudinary yükleme tarihi bu kadar gün içindeyse "Yeni" rozeti
@@ -181,10 +203,43 @@ def cikis():
     return redirect(url_for("giris"))
 
 
+# /api/musteri-kodu girişsiz çalışmak zorunda (giriş formunu doldurmak için)
+# ama kısa sayısal kodlar sırayla denenerek tüm müşteri listesi dökülebilirdi.
+# Basit bir IP başına dakikalık hız sınırı: normal kullanımda (bir kod yazılır,
+# 400ms debounce) asla dolmaz, otomatik tarama ise takılır.
+_HIZ_SINIRI_ISTEK = 30
+_HIZ_SINIRI_SANIYE = 60
+_hiz_kayitlari: dict[str, list[float]] = {}
+_hiz_kilidi = threading.Lock()
+
+
+def _istemci_ip() -> str:
+    # Cloudflare Tunnel arkasındayız: remote_addr hep 127.0.0.1, gerçek IP başlıkta.
+    return request.headers.get("CF-Connecting-IP") or request.remote_addr or "?"
+
+
+def _hiz_siniri_asildi(anahtar: str) -> bool:
+    simdi = time.time()
+    with _hiz_kilidi:
+        zamanlar = [t for t in _hiz_kayitlari.get(anahtar, []) if simdi - t < _HIZ_SINIRI_SANIYE]
+        if len(zamanlar) >= _HIZ_SINIRI_ISTEK:
+            _hiz_kayitlari[anahtar] = zamanlar
+            return True
+        zamanlar.append(simdi)
+        _hiz_kayitlari[anahtar] = zamanlar
+        # Sözlük sınırsız büyümesin - eski/boş IP'leri ara sıra temizle.
+        if len(_hiz_kayitlari) > 5000:
+            for ip in [ip for ip, ts in _hiz_kayitlari.items() if not ts or simdi - ts[-1] > _HIZ_SINIRI_SANIYE]:
+                _hiz_kayitlari.pop(ip, None)
+    return False
+
+
 @app.route("/api/musteri-kodu/<kodu>")
 def api_musteri_kodu(kodu):
     """Giriş ekranında 'Firma adı' alanına bir müşteri kodu (örn. '11..')
     yazılınca Firma adı + Müşteri Temsilcisi Adı'nı otomatik doldurmak için."""
+    if _hiz_siniri_asildi(_istemci_ip()):
+        return jsonify({"found": False, "hata": "cok fazla istek"}), 429
     customers = catalog_source.fetch_customers()
     musteri = customers.get(kodu.strip())
     if not musteri:
@@ -291,7 +346,11 @@ def sepete_ekle():
     products = catalog_source.fetch_catalog()
     urun = next((p for p in products if p.barcode == barkod), None)
 
-    donus_url = request.form.get("donus_url") or url_for("kategoriler")
+    # Açık yönlendirme koruması: sadece site içi göreli yollar ("/..."),
+    # "//evil.com" veya "https://..." gibi dış adresler kategorilere düşer.
+    donus_url = request.form.get("donus_url") or ""
+    if not donus_url.startswith("/") or donus_url.startswith("//"):
+        donus_url = url_for("kategoriler")
     ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
     if not urun or miktar <= 0:
@@ -430,15 +489,34 @@ def urun_arama():
     return render_template("arama.html", urunler=sonuc, arama=q)
 
 
+@app.errorhandler(404)
+def sayfa_bulunamadi(_e):
+    return render_template("hata.html", mesaj="Sayfa bulunamadı."), 404
+
+
+@app.errorhandler(catalog_source.CatalogUnavailable)
+def katalog_yok(e):
+    logger.error("katalog kullanılamıyor: %s", e)
+    return render_template(
+        "hata.html", mesaj="Ürün kataloğu şu an yüklenemiyor, lütfen biraz sonra tekrar deneyin.",
+    ), 503
+
+
+@app.errorhandler(500)
+def sunucu_hatasi(_e):
+    return render_template("hata.html", mesaj="Beklenmedik bir hata oluştu, lütfen tekrar deneyin."), 500
+
+
 if __name__ == "__main__":
-    # debug=True reloader iki süreç açar (izleyici + gerçek işçi) - arka plan
-    # tazelemeyi ve tek seferlik kurulumu sadece gerçek işçide başlat.
-    # ensure_worksheets() eskiden /sepete-ekle, /sepet, /bekleyen-siparislerim
-    # route'larının HER isteğinde çağrılıyordu (tüm sekmeleri listeleyen
-    # ekstra bir Sheets isteği, ~1.5sn) - "sepete ekle çok uzun sürüyor"
-    # şikayeti (2026-09-25) buradan geliyordu, sekmeler zaten var olduğu
-    # için pratikte hiçbir zaman bir şey yapmıyordu. Artık sadece başlangıçta.
-    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-        catalog_source.start_background_refresh()
-        order_writer.ensure_worksheets()
-    app.run(host="0.0.0.0", debug=True, port=5300)
+    # Üretimde debug=False ve gerçek bir WSGI sunucusu (waitress, Windows'ta
+    # çalışır). Flask'ın geliştirme sunucusu + debug=True canlı sitede
+    # Werkzeug'ın etkileşimli hata ayıklayıcısını (kaynak kod, ortam
+    # değişkenleri, Python konsolu) internete açıyordu - 2026-09-27
+    # güvenlik gözden geçirmesinde kaldırıldı. Otomatik yeniden yükleme
+    # artık yok: kod değişince sunucu (FlipaBit-Sunucu görevi) yeniden
+    # başlatılmalı.
+    from waitress import serve
+
+    catalog_source.start_background_refresh()
+    order_writer.ensure_worksheets()
+    serve(app, host="0.0.0.0", port=5300, threads=8)

@@ -43,7 +43,8 @@
 
 <div class="toplam-satiri">Toplam: {{ "%.2f"|format(toplam) }} ₺</div>
 
-<form method="post" action="{{ url_for('onayla') }}" style="text-align:right;">
+<form method="post" action="{{ url_for('onayla') }}" style="text-align:right;"
+      onsubmit="if (!confirm('Siparişi onaylıyor musunuz? Bu işlem geri alınamaz.')) return false; this.querySelector('button').disabled = true;">
     <button class="btn btn-orange" type="submit">Siparişi Onayla</button>
 </form>
 {% endif %}

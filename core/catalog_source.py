@@ -255,18 +255,32 @@ def _resim_yukleme_tarihi(image_url: str | None) -> datetime | None:
         return None
 
 
+class CatalogUnavailable(Exception):
+    """Sheets'e ulaşılamadı VE elde hiç (bayat bile olsa) önbellek yok -
+    app.py bunu dostane bir 503 sayfasına çeviriyor (2026-09-27 gözden
+    geçirmesi: eskiden çıplak 500 dönüyordu)."""
+
+
 def fetch_catalog(min_stock: int = MIN_STOCK, force_refresh: bool = False) -> list[Product]:
     """STOK sekmesini ceker, STOK MİKTARI >= min_stock VE fiyat > 0 olanları
     döndürür. Fiyat VADELİ FİYAT KDV DAHİL sütunundan ÇARPANSIZ okunur.
     _CACHE_TTL_SECONDS boyunca bellekte tutulur (sayfa başı 6 ayrı istek
-    atmamak için)."""
+    atmamak için). Yeniden çekme başarısız olursa bayat önbellek (varsa)
+    sessizce kullanılmaya devam eder - Sheets'in kısa kesintisi siteyi
+    düşürmesin."""
     global _catalog_cache
     if not force_refresh and _catalog_cache is not None:
         cached_at, cached_products = _catalog_cache
         if time.time() - cached_at < _CACHE_TTL_SECONDS:
             return cached_products
 
-    products = _fetch_catalog_uncached(min_stock)
+    try:
+        products = _fetch_catalog_uncached(min_stock)
+    except Exception as e:
+        if _catalog_cache is not None:
+            logger.warning("catalog_source: katalog yenilenemedi, bayat önbellek kullanılıyor (%s)", e)
+            return _catalog_cache[1]
+        raise CatalogUnavailable(str(e)) from e
     _catalog_cache = (time.time(), products)
     return products
 
@@ -356,7 +370,13 @@ def fetch_customers(force_refresh: bool = False) -> dict[str, Customer]:
         if time.time() - cached_at < _CACHE_TTL_SECONDS:
             return cached
 
-    rows = _fetch_csv_rows(MUSTERILER_URL)
+    try:
+        rows = _fetch_csv_rows(MUSTERILER_URL)
+    except Exception as e:
+        # Otofill sadece bir kolaylık - Sheets erişilemezse giriş formunu
+        # bozmak yerine bayat listeyi (ya da hiç eşleşme yok) döndür.
+        logger.warning("catalog_source: müşteri listesi çekilemedi (%s)", e)
+        return _customers_cache[1] if _customers_cache is not None else {}
     result: dict[str, Customer] = {}
     for row in rows:
         kodu = (row.get("Kodu") or "").strip()
