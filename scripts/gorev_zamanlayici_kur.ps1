@@ -43,16 +43,21 @@ Register-ScheduledTask -TaskName "FlipaBit-Sunucu" -Action $ServerAction -Trigge
 # Zamanlayici'nin izlemesinden tamamen cikariyordu -- wscript ani donunce
 # gorev "basariyla bitti" sayiliyor, cloudflared cokerse/aglantisi
 # duserse 999 kere yeniden deneme ayari HIC devreye girmiyordu (4 gun
-# boyunca tunel dustu, kimse fark etmedi). Cozum: cloudflared.exe'yi
-# DOGRUDAN, "oturum acik olsun olmasin calistir" (S4U logon, sifre
-# saklanmaz) prensibiyle calistirmak -- bu hem penceresiz kalir (S4U
-# etkilesimsiz oturumda calisir) HEM DE Gorev Zamanlayici artik gercek
-# cloudflared surecini izleyip cokerse yeniden baslatabilir.
-$TunnelAction = New-ScheduledTaskAction -Execute $CloudflaredExe -Argument "tunnel --config `"$TunnelConfig`" run" -WorkingDirectory $ProjectRoot
-$TunnelPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U -RunLevel Limited
-$TunnelTriggers = @($LogonTrigger, (New-ScheduledTaskTrigger -AtStartup))
-Register-ScheduledTask -TaskName "FlipaBit-Tunnel" -Action $TunnelAction -Trigger $TunnelTriggers -Principal $TunnelPrincipal -Settings $CommonSettings `
-    -Description "FlipaBit / toptan.ozgunaydin.com.tr icin ayri Cloudflare Tunnel (flipabit-toptan) -- oturum acilisinda/sistem baslangicinda otomatik baslar, penceresiz, cokerse Gorev Zamanlayici tarafindan gercekten izlenip yeniden baslatilir" -Force
+# boyunca tunel dustu, kimse fark etmedi). Ilk cozum denemesi (S4U logon ile
+# dogrudan cloudflared.exe) bu makinedeki etki alani hesabinda
+# "Register-ScheduledTask: Parametre hatali (UserId)" ile reddedildi
+# (2026-09-29) - yani o kayit hic olusmamisti, eski .vbs gorevi (dosyasi
+# silinmis halde!) duruyordu. Gecerli cozum: scripts\tunnel_baslat.ps1 --
+# gizli bir powershell cloudflared'i penceresiz baslatip -Wait ile bekler;
+# Gorev Zamanlayici powershell'i izler, cloudflared cokunce o da biter ->
+# yeniden baslatma devreye girer. Oturum acik kullanici hesabiyla (Sunucu
+# goreviyle ayni) calisir, sifre/S4U gerekmez.
+$PowershellExe = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+$TunnelScript  = Join-Path $PSScriptRoot "tunnel_baslat.ps1"
+$TunnelAction  = New-ScheduledTaskAction -Execute $PowershellExe `
+    -Argument "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$TunnelScript`"" -WorkingDirectory $ProjectRoot
+Register-ScheduledTask -TaskName "FlipaBit-Tunnel" -Action $TunnelAction -Trigger $LogonTrigger -Settings $CommonSettings `
+    -Description "FlipaBit / toptan.ozgunaydin.com.tr icin ayri Cloudflare Tunnel (flipabit-toptan) -- oturum acilisinda otomatik baslar, penceresiz, cokerse Gorev Zamanlayici tarafindan izlenip yeniden baslatilir (scripts\tunnel_baslat.ps1)" -Force
 
 # --- Gorev 3: Wix senkronu (Sheets -> www.ozgunaydin.net), GUNDE 1 KEZ 06:00 ---
 # core/wix_sync.py --uygula: urun fiyat/ad/stok/gorsel/aciklama + kategori
@@ -60,15 +65,14 @@ Register-ScheduledTask -TaskName "FlipaBit-Tunnel" -Action $TunnelAction -Trigge
 # beslenir). Kullanici karari 2026-09-29: 15 dk degil, gunde bir. Bilgisayar o
 # saatte kapaliysa -StartWhenAvailable sayesinde acilir acilmaz calisir.
 # Log: logs/wix_sync.log (her calismada eklenir). Ayrinti: docs/WIX_KURULUM.md
-$PythonExe   = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
-$WixSyncCmd  = "/c `"set PYTHONIOENCODING=utf-8&& `"$PythonExe`" -m core.wix_sync --uygula >> `"$ProjectRoot\logs\wix_sync.log`" 2>&1`""
-$WixAction   = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\cmd.exe" -Argument $WixSyncCmd -WorkingDirectory $ProjectRoot
+$WixScript   = Join-Path $PSScriptRoot "wix_senkron_calistir.ps1"
+$WixAction   = New-ScheduledTaskAction -Execute $PowershellExe `
+    -Argument "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$WixScript`"" -WorkingDirectory $ProjectRoot
 $WixTrigger  = New-ScheduledTaskTrigger -Daily -At 06:00
 $WixSettings = New-ScheduledTaskSettingsSet -Hidden -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
     -ExecutionTimeLimit (New-TimeSpan -Hours 1) -MultipleInstances IgnoreNew
-$WixPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U -RunLevel Limited
-Register-ScheduledTask -TaskName "FlipaBit-WixSenkron" -Action $WixAction -Trigger $WixTrigger -Principal $WixPrincipal -Settings $WixSettings `
-    -Description "Google Sheets katalogunu www.ozgunaydin.net (Wix Stores) ile her gun 06:00'da senkronlar: urunler, kategoriler, ceviriler, kategori agaci" -Force
+Register-ScheduledTask -TaskName "FlipaBit-WixSenkron" -Action $WixAction -Trigger $WixTrigger -Settings $WixSettings `
+    -Description "Google Sheets katalogunu www.ozgunaydin.net (Wix Stores) ile her gun 06:00'da senkronlar: urunler, kategoriler, ceviriler, kategori agaci (scripts\wix_senkron_calistir.ps1)" -Force
 
 Write-Host "Gorevler kaydedildi: FlipaBit-Sunucu, FlipaBit-Tunnel, FlipaBit-WixSenkron"
 Write-Host "Kontrol icin: Get-ScheduledTask -TaskName 'FlipaBit-*'"
