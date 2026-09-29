@@ -68,6 +68,17 @@ ORTA_AD_SUTUNU = {"en": "UST-GRUP-EN", "tr": "UST-GRUP-TR", "ru": "UST-GRUP-RU",
 MEGA_AD_SUTUNU = {"en": "MEGA-GRUP-EN", "tr": "MEGA-GRUP-TR", "ru": "MEGA-GRUP-RU", "ar": "MEGA-GRUP-AR"}
 YONETILMEYEN_KOLEKSIYONLAR = {"All Products"}
 
+# Kullanıcı kararı 2026-09-29: MEGA-GRUP-* boş bırakılmış (henüz sınıflandırılmamış)
+# bir satır Wix'te GÖRÜNMEZ kalmasın - kullanıcı düzeltene kadar bu "toplama
+# kutusu" ana grubun altında görünsün. Gerçek bir sınıflandırma değil, geçici;
+# kullanıcı MEGA-GRUP-* sütununu doldurunca ürün normal ana gruba taşınır.
+FALLBACK_MEGA_EN = "NEW CATEGORIES"
+FALLBACK_MEGA_SIRA = "99"
+FALLBACK_MEGA_ADLAR = {
+    "en": "NEW CATEGORIES", "tr": "Yeni Eklenen Kategoriler",
+    "ru": "НОВЫЕ КАТЕГОРИИ", "ar": "فئات جديدة",
+}
+
 # "1- DUVET ...", "11A - TOWEL ...", "10-BATH ...", "1. КОМПЛЕКТЫ", "١٠ أطقم", "11أ - مجموعة"
 _SIRA_RE = re.compile(r"^\s*([0-9٠-٩]+)\s*([A-Za-zء-ي])?\s*[-.–]?\s*")
 _ARAP_RAKAM = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
@@ -182,7 +193,11 @@ def yapi_oku(rows: list[dict] | None = None) -> Yapi:
         if not orta_en:
             uyarilar.append(f"{kod}: UST-GRUP-EN boş, orta grupsuz kalır")
         if not mega_en:
-            uyarilar.append(f"{kod}: MEGA-GRUP-EN boş, mega grupsuz kalır")
+            # Sınıflandırılmamış bırakılmasın - kullanıcı MEGA-GRUP-* dolduruncaya
+            # kadar "Yeni Eklenen Kategoriler" toplama kutusuna düşer, Wix'te
+            # görünür ve satılabilir kalır (bkz. FALLBACK_MEGA_EN yorumu).
+            uyarilar.append(f"{kod}: MEGA-GRUP-EN boş, 'Yeni Eklenen Kategoriler' altına kondu")
+            mega_sira, mega_en, mega_adlar = FALLBACK_MEGA_SIRA, FALLBACK_MEGA_EN, FALLBACK_MEGA_ADLAR
 
         if mega_en:
             m = megalar.get(mega_en)
