@@ -54,19 +54,21 @@ $TunnelTriggers = @($LogonTrigger, (New-ScheduledTaskTrigger -AtStartup))
 Register-ScheduledTask -TaskName "FlipaBit-Tunnel" -Action $TunnelAction -Trigger $TunnelTriggers -Principal $TunnelPrincipal -Settings $CommonSettings `
     -Description "FlipaBit / toptan.ozgunaydin.com.tr icin ayri Cloudflare Tunnel (flipabit-toptan) -- oturum acilisinda/sistem baslangicinda otomatik baslar, penceresiz, cokerse Gorev Zamanlayici tarafindan gercekten izlenip yeniden baslatilir" -Force
 
-# --- Gorev 3: Wix senkronu (Sheets -> www.ozgunaydin.net), 15 dakikada bir ---
+# --- Gorev 3: Wix senkronu (Sheets -> www.ozgunaydin.net), GUNDE 1 KEZ 06:00 ---
 # core/wix_sync.py --uygula: urun fiyat/ad/stok/gorsel/aciklama + kategori
 # koleksiyonlari + ceviriler + kategori agaci JSON (Velo menu/anasayfa buradan
-# beslenir). Log: logs/wix_sync.log (her calismada eklenir). Ayrinti: docs/WIX_KURULUM.md
+# beslenir). Kullanici karari 2026-09-29: 15 dk degil, gunde bir. Bilgisayar o
+# saatte kapaliysa -StartWhenAvailable sayesinde acilir acilmaz calisir.
+# Log: logs/wix_sync.log (her calismada eklenir). Ayrinti: docs/WIX_KURULUM.md
 $PythonExe   = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 $WixSyncCmd  = "/c `"set PYTHONIOENCODING=utf-8&& `"$PythonExe`" -m core.wix_sync --uygula >> `"$ProjectRoot\logs\wix_sync.log`" 2>&1`""
 $WixAction   = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\cmd.exe" -Argument $WixSyncCmd -WorkingDirectory $ProjectRoot
-$WixTrigger  = New-ScheduledTaskTrigger -Once -At (Get-Date).Date -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration (New-TimeSpan -Days 3650)
+$WixTrigger  = New-ScheduledTaskTrigger -Daily -At 06:00
 $WixSettings = New-ScheduledTaskSettingsSet -Hidden -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
     -ExecutionTimeLimit (New-TimeSpan -Hours 1) -MultipleInstances IgnoreNew
 $WixPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U -RunLevel Limited
 Register-ScheduledTask -TaskName "FlipaBit-WixSenkron" -Action $WixAction -Trigger $WixTrigger -Principal $WixPrincipal -Settings $WixSettings `
-    -Description "Google Sheets katalogunu www.ozgunaydin.net (Wix Stores) ile 15 dakikada bir senkronlar: urunler, kategoriler, ceviriler, kategori agaci" -Force
+    -Description "Google Sheets katalogunu www.ozgunaydin.net (Wix Stores) ile her gun 06:00'da senkronlar: urunler, kategoriler, ceviriler, kategori agaci" -Force
 
 Write-Host "Gorevler kaydedildi: FlipaBit-Sunucu, FlipaBit-Tunnel, FlipaBit-WixSenkron"
 Write-Host "Kontrol icin: Get-ScheduledTask -TaskName 'FlipaBit-*'"

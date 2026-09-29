@@ -70,5 +70,7 @@ Sunucuya ulaşılamazsa: menü Editor'deki haliyle kalır, ızgara gizlenir
 
 ## 4. Zamanlanmış görev
 
-`scripts/gorev_zamanlayici_kur.ps1` → `FlipaBit-WixSenkron`: 15 dakikada bir
-`python -m core.wix_sync --uygula`. Log: `logs/wix_sync.log`.
+`scripts/gorev_zamanlayici_kur.bat` (yönetici olarak, bir kez) → `FlipaBit-WixSenkron`:
+**her gün 06:00'da** `python -m core.wix_sync --uygula` (kullanıcı kararı 2026-09-29:
+günde bir yeterli). Bilgisayar o saatte kapalıysa açıldığında çalışır. Log:
+`logs/wix_sync.log`. Ara güncelleme gerekirse elle: `python -m core.wix_sync --uygula`.
