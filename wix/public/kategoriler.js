@@ -44,25 +44,32 @@ export async function kategoriAgaci() {
     }
 }
 
-// Üst grupları (ve altlarını) seçili dildeki adla, linkle düzleştirir.
+// Mega grupları, seçili dildeki adla/linkle, 3 KATMANLI olarak düzleştirir:
+// mega.altlar = orta gruplar VARSA onlar (her biri kendi .altlar'ıyla,
+// gerçek ürün kategorileri), yoksa (Baby/Others gibi tek katmanlı mega'larda)
+// doğrudan ürün kategorileri - ikinci durumda .altlar boş kalır (3. seviye yok).
+function dugumOku(dugum, d, birincilDil) {
+    return {
+        ad: dugum.ad[d] || dugum.ad[birincilDil] || '',
+        urun: dugum.urun,
+        gorsel: dugum.gorsel || '',
+        link: kategoriLink(dugum.slug),
+    };
+}
+
 export async function kategoriListesi() {
     const agac = await kategoriAgaci();
     if (!agac) return [];
     const d = dil();
-    const ad = (dugum) => dugum.ad[d] || dugum.ad[agac.birincil_dil] || '';
-    return agac.ustler.map((u, i) => ({
-        _id: `ust-${i}`,
-        ad: ad(u),
-        urun: u.urun,
-        urunEtiketi: urunEtiketi(u.urun),
-        gorsel: u.gorsel || '',
-        link: kategoriLink(u.slug),
-        altlar: u.altlar.map((a, j) => ({
-            _id: `alt-${i}-${j}`,
-            ad: ad(a),
-            urun: a.urun,
-            gorsel: a.gorsel || '',
-            link: kategoriLink(a.slug),
+    const oku = (dugum) => dugumOku(dugum, d, agac.birincil_dil);
+    return agac.ustler.map((mega, i) => ({
+        _id: `mega-${i}`,
+        ...oku(mega),
+        urunEtiketi: urunEtiketi(mega.urun),
+        altlar: (mega.ortalar && mega.ortalar.length ? mega.ortalar : mega.altlar || []).map((orta, j) => ({
+            _id: `orta-${i}-${j}`,
+            ...oku(orta),
+            altlar: (orta.altlar || []).map((alt, k) => ({ _id: `alt-${i}-${j}-${k}`, ...oku(alt) })),
         })),
     }));
 }

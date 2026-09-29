@@ -496,10 +496,18 @@ def main() -> None:
         "kol_gorunurluk": plan.kol_gorunurluk, "ceviri": plan.ceviri,
         "uyelik_ekle": {k: len(v) for k, v in plan.uyelik_ekle.items()},
         "uyelik_cikar": {k: len(v) for k, v in plan.uyelik_cikar.items()},
-        "agac_onizleme": [{"sira": u.sira, "en": u.anahtar, "tr": u.adlar.get("tr"), "urun": plan.urun_sayisi.get(u.anahtar, 0),
-                           "altlar": [{"en": a.anahtar, "tr": a.adlar.get("tr"), "urun": plan.urun_sayisi.get(a.anahtar, 0)}
-                                      for a in yapi.altlar if a.ust_anahtar == u.anahtar]}
-                          for u in yapi.ustler],
+        "agac_onizleme": [
+            {"sira": m.sira, "en": m.anahtar, "tr": m.adlar.get("tr"), "urun": plan.urun_sayisi.get(m.anahtar, 0),
+             "ortalar": [
+                 {"sira": o.sira, "en": o.anahtar, "tr": o.adlar.get("tr"), "urun": plan.urun_sayisi.get(o.anahtar, 0),
+                  "altlar": [{"en": a.anahtar, "tr": a.adlar.get("tr"), "urun": plan.urun_sayisi.get(a.anahtar, 0)}
+                             for a in yapi.altlar if a.ust_anahtar == o.anahtar]}
+                 for o in yapi.ortalar if o.ust_anahtar == m.anahtar
+             ],
+             "altlar_dogrudan": [{"en": a.anahtar, "tr": a.adlar.get("tr"), "urun": plan.urun_sayisi.get(a.anahtar, 0)}
+                                 for a in yapi.altlar if a.ust_anahtar == m.anahtar]}
+            for m in yapi.megalar
+        ],
     }, ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps(plan.ozet(), ensure_ascii=False, indent=1))
     if not args.uygula:
