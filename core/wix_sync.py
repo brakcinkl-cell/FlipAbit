@@ -39,6 +39,7 @@ döner, bu kod V3'e taşınırsa baştan yazılmalı.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import logging
 import sys
@@ -315,7 +316,9 @@ def plan_olustur(wix: WixClient) -> tuple[Plan, wk.Yapi, dict[str, dict], list[s
                 alanlar["name"] = p.title
             if not u.get("visible"):
                 alanlar["visible"] = True
-            if ACIKLAMA_GUNCELLE and p.description and p.description != (u.get("description") or ""):
+            # Wix açıklamayı HTML olarak saklar ("&" -> "&amp;"); karşılaştırma
+            # çözülmüş haliyle, yoksa aynı 26 ürün her koşuda yeniden yazılıyor.
+            if ACIKLAMA_GUNCELLE and p.description and p.description != html.unescape(u.get("description") or ""):
                 alanlar["description"] = p.description[:8000]
             if alanlar:
                 plan.guncelle.append({"id": uid, "sku": sku, "name": u.get("name"), "alanlar": alanlar,
