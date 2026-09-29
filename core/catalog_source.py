@@ -192,25 +192,33 @@ def _baslik_onar(baslik: str) -> str:
             return parca
         yeni = _kucuk_bicim(parca)
         if parca[:1].isupper():
-            ilk = yeni[:1]
-            ilk = _TR_UPPER_I if ilk == _TR_LOWER_I else (_TR_UPPER_DOTLESS_I if ilk == _TR_LOWER_DOTLESS_I else ilk.upper())
-            yeni = ilk + yeni[1:]
+            yeni = _tr_buyuk_harf(yeni[:1]) + yeni[1:]
         return yeni
-    return _HARF_RUN_RE.sub(onar, baslik)
+    return _ayrac_sonrasi_buyut(_HARF_RUN_RE.sub(onar, baslik))
+
+
+def _tr_buyuk_harf(harf: str) -> str:
+    if harf == _TR_LOWER_I:
+        return _TR_UPPER_I
+    if harf == _TR_LOWER_DOTLESS_I:
+        return _TR_UPPER_DOTLESS_I
+    return harf.upper()
+
+
+# "Cotton Garden/gri", "Bisc-polar", "C.sarı" -> ayraçtan ("/", "-", ".", "(")
+# sonra gelen harf de büyük: "Cotton Garden/Gri", "Bisc-Polar", "C.Sarı".
+_AYRAC_SONRASI_HARF_RE = re.compile(r"(?<=[/\-.(])([a-zçğıiöşü])")
+
+
+def _ayrac_sonrasi_buyut(text: str) -> str:
+    return _AYRAC_SONRASI_HARF_RE.sub(lambda m: _tr_buyuk_harf(m.group(1)), text)
 
 
 def _tr_title_word(word: str) -> str:
     if not word:
         return word
     lowered = _tr_lower(word)
-    first = lowered[0]
-    if first == _TR_LOWER_I:
-        first_upper = _TR_UPPER_I
-    elif first == _TR_LOWER_DOTLESS_I:
-        first_upper = _TR_UPPER_DOTLESS_I
-    else:
-        first_upper = first.upper()
-    return first_upper + lowered[1:]
+    return _ayrac_sonrasi_buyut(_tr_buyuk_harf(lowered[0]) + lowered[1:])
 
 
 def tr_title_case(text: str) -> str:
