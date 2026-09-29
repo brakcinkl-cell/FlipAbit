@@ -23,7 +23,7 @@ koleksiyonlar, çeviriler, ürün üyelikleri, eski koleksiyonların gizlenmesi,
 Velo'nun okuduğu kategori ağacı JSON'u).
 
 Wix REST (2026-09-29, deneyerek + dokümandan doğrulandı):
-  ürün     POST /stores/v1/products/query | PATCH /stores/v1/products/{id} | POST /stores/v1/products
+  ürün     POST /stores/v1/products/query (includeHiddenProducts:true ŞART) | PATCH /stores/v1/products/{id} | POST /stores/v1/products
            POST /stores/v1/products/{id}/media {media:[{url}]}
   stok     PATCH /stores/v2/inventoryItems/product/{id}  (trackQuantity HER çağrıda verilmeli)
   kolek.   POST /stores/v1/collections/query | POST /stores/v1/collections {collection:{name}}
@@ -105,10 +105,15 @@ class WixClient:
 
     # --- ürünler
     def tum_urunler(self) -> list[dict]:
+        """GİZLİ ürünler dahil. Varsayılan sorgu yalnız görünür ürünleri döndürür
+        (2026-09-29'da fark edildi: 1356 görünür / 4721 toplam) - gizliler
+        görülmezse senkron onları yeniden oluşturmaya kalkar ("sku is not
+        unique") ve stoğu gelen ürün asla yeniden görünür yapılamaz."""
         urunler, offset = [], 0
         while True:
             d = self._istek("POST", "/stores/v1/products/query",
-                            {"query": {"paging": {"limit": 100, "offset": offset}}, "includeVariants": False}, yazma=False)
+                            {"query": {"paging": {"limit": 100, "offset": offset}},
+                             "includeVariants": False, "includeHiddenProducts": True}, yazma=False)
             sayfa = d.get("products", [])
             urunler.extend(sayfa)
             offset += len(sayfa)
@@ -387,11 +392,17 @@ def plani_uygula(wix: WixClient, plan: Plan, yapi: wk.Yapi, koleksiyon: dict[str
             logger.warning("gorsel eklenemedi %s: %s", x["sku"], e)
     for x in ([] if sadece_kategori else plan.olustur):
         if limit_doldu(): break
-        uid = wix.urun_olustur({
-            "name": x["name"], "productType": "physical", "sku": x["sku"], "visible": True,
-            "priceData": {"price": x["price"]}, "costAndProfitData": {"itemCost": 0},
-            "description": x["description"],
-        })
+        try:
+            uid = wix.urun_olustur({
+                "name": x["name"], "productType": "physical", "sku": x["sku"], "visible": True,
+                "priceData": {"price": x["price"]}, "costAndProfitData": {"itemCost": 0},
+                "description": x["description"],
+            })
+        except RuntimeError as e:
+            # Örn. "product.sku is not unique": SKU Wix'te bir VARYANTTA kayıtlı
+            # olabilir; tek ürün yüzünden koca senkron durmasın, raporla ve geç.
+            logger.warning("urun olusturulamadi %s %s: %s", x["sku"], x["name"], e)
+            continue
         wix.stok_yaz(uid, x["stok"])
         if x["urls"]:
             try:
