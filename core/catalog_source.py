@@ -73,10 +73,130 @@ _WORD_RE = re.compile(r"[^\s]+")
 _TR_UPPER_I, _TR_LOWER_I = "İ", "i"
 _TR_UPPER_DOTLESS_I, _TR_LOWER_DOTLESS_I = "I", "ı"
 
+# STOK'taki adlar ASCII büyük harf ("DIAGONAL", "SILGI", "YASTIK") - noktalı/
+# noktasız i bilgisi kaynakta YOK. Eskiden her "I" körlemesine "ı" yapılıyordu:
+# YASTIK->yastık doğru ama DIAGONAL->dıagonal, SENSICE->sensıce, BATTANIYE->
+# battanıye yanlış çıkıyordu (2026-09-29, Wix senkronu hazırlanırken fark
+# edildi). Harfe bakarak karar verilemez, kelimeye bakılır: doğru yazılmış
+# kaynaklardan (ürün açıklamaları 'içerik' + adrev uzun adları) kelime
+# biçimleri ÖĞRENİLİR (_kelime_bicimlerini_ogren), üstüne sık Türkçe katalog
+# kelimeleri için sabit bir çekirdek liste; hiç görülmemiş kelime ş/ç/ğ/ö/ü
+# içeriyorsa Türkçe sayılıp ı korunur, yoksa (marka/İngilizce) "i" yapılır.
+_ASCII_FOLD = str.maketrans("çğıiİöşüÇĞIÖŞÜ", "CGIIIOSUCGIOSU")
+_HARF_RUN_RE = re.compile(r"[A-Za-zÇĞİIÖŞÜçğıiöşü]+")
+_TURKCE_OZEL_HARFLER = set("şçğöüŞÇĞÖÜ")
+
+_CEKIRDEK_KELIMELER = {
+    "KILIF": "kılıf", "KILIFI": "kılıfı", "YASTIK": "yastık", "KISILIK": "kişilik", "CIFT": "çift",
+    "BATTANIYE": "battaniye", "SILGI": "silgi", "PIKE": "pike", "PIKELI": "pikeli", "NEVRESIM": "nevresim",
+    "TAKIMI": "takımı", "TAKIM": "takım", "HAVLUSU": "havlusu", "ORTUSU": "örtüsü", "ORTU": "örtü",
+    "SIVI": "sıvı", "GECIRMEZ": "geçirmez", "CARSAF": "çarşaf", "KIRMIZI": "kırmızı", "SARI": "sarı",
+    "ACIK": "açık", "YESIL": "yeşil", "GRI": "gri", "MAVI": "mavi", "MURDUM": "mürdüm", "FUSYA": "fuşya",
+    "TAS": "taş", "CAY": "çay", "PESTEMAL": "peştemal", "COCUK": "çocuk", "KADIN": "kadın", "ONLUGU": "önlüğü",
+    "CEYIZ": "çeyiz", "PECETE": "peçete", "IKILI": "ikili", "UCLU": "üçlü", "DORTLU": "dörtlü", "ALTILI": "altılı",
+    "PARCA": "parça", "PARCALI": "parçalı", "DUZ": "düz", "CIZGILI": "çizgili", "CICEKLI": "çiçekli",
+    "NAKISLI": "nakışlı", "ISLEMELI": "işlemeli", "JAKARLI": "jakarlı", "BASKILI": "baskılı", "KAPSONLU": "kapşonlu",
+    "SALYAKA": "şalyaka", "KAPITONELI": "kapitoneli", "LASTIKLI": "lastikli", "MIKRO": "mikro", "MIKROFIBER": "mikrofiber",
+    "ISIK": "ışık", "KIS": "kış", "YAZLIK": "yazlık", "KISLIK": "kışlık", "SICAK": "sıcak", "ILIK": "ılık",
+    "LILA": "lila", "ANTRASIT": "antrasit", "INDIGO": "indigo", "LACIVERT": "lacivert", "VIZON": "vizon",
+    "COLURIST": "colurist", "COLOURIST": "colourist", "YASTIKLI": "yastıklı", "CARSAFLI": "çarşaflı",
+    "KILIFLI": "kılıflı", "GUMUS": "gümüş", "DUS": "duş", "KUL": "kül", "YUN": "yün", "YESILI": "yeşili",
+    "KUMBEJI": "kumbeji", "SIM": "sim", "KENEVIR": "kenevir", "SETI": "seti", "BIYE": "biye",
+}
+_ogrenilen_kelimeler: dict[str, str] = dict(_CEKIRDEK_KELIMELER)
+
+
+def _kelime_bicimlerini_ogren(adrev: dict[str, str], icerik_lookup: dict[str, str]) -> None:
+    """İnsan eliyle yazılmış kaynaklardaki (ürün açıklamaları 'içerik' +
+    adrev uzun adları) her kelimeyi ASCII-büyük anahtarıyla (YASTIK -> yastık)
+    öğrenir. Katalog 'Trad' sütunu BİLEREK kullanılmıyor: 1546 ürünün başlığı
+    oradan geliyor ve o sütunun kendisi aynı kör I->ı hatasını taşıyor
+    ("Dıagonal", "Colurıst") - ondan öğrenmek hatayı pekiştirirdi. Çekirdek
+    liste her zaman öncelikli."""
+    # Çoğunluk oyu: açıklamalardaki tek tük yazım hatası ("antrasıt", "lıla")
+    # sözlüğe sızmasın - her anahtar için en sık görülen biçim kazanır.
+    sayac: dict[str, dict[str, int]] = {}
+    for metin in list(icerik_lookup.values()) + list(adrev.values()):
+        for kelime in _HARF_RUN_RE.findall(metin):
+            if len(kelime) < 3:
+                continue
+            anahtar = kelime.translate(_ASCII_FOLD).upper()
+            if anahtar in _CEKIRDEK_KELIMELER:
+                continue
+            if kelime == kelime.upper() and "I" in kelime and not (
+                _TR_UPPER_I in kelime or _TURKCE_OZEL_HARFLER & set(kelime)
+            ):
+                # TAMAMEN BÜYÜK yazılmış ve içinde I var ama yazarın İ/I ayrımı
+                # yaptığına dair iz yok ("FITTED" mi "FITTED" mı?) - belirsiz, atla.
+                continue
+            bicim = _turkce_kucult(kelime)
+            sayac.setdefault(anahtar, {})
+            sayac[anahtar][bicim] = sayac[anahtar].get(bicim, 0) + 1
+    _ogrenilen_kelimeler.clear()
+    for anahtar, bicimler in sayac.items():
+        # Eşitlikte Türkçe harf taşıyan biçim kazanır ("gumus" 4 - "gümüş" 4 -> gümüş)
+        _ogrenilen_kelimeler[anahtar] = max(
+            bicimler.items(), key=lambda kv: (kv[1], sum(not c.isascii() for c in kv[0]))
+        )[0]
+    _ogrenilen_kelimeler.update(_CEKIRDEK_KELIMELER)
+
+
+def _turkce_kucult(kelime: str) -> str:
+    """Düzgün yazılmış Türkçe için küçültme: İ -> i, I -> ı."""
+    return kelime.replace(_TR_UPPER_I, _TR_LOWER_I).replace("I", _TR_LOWER_DOTLESS_I).lower()
+
+
+def _harf_harf_birlestir(giris: str, ogrenilen: str) -> str:
+    """Girişin küçültülmüş hali ile öğrenilen biçimi harf harf birleştirir
+    (ASCII katlama 1:1 olduğu için uzunluklar eşit). ı/i kararı öğrenilenden
+    gelir; diğer harflerde ise Türkçe harf (ş/ü/…) taşıyan taraf kazanır -
+    böylece sözlükteki tek tük düz-ASCII yazım ("gumus") girişin doğru
+    "gümüş"ünü bozamaz, ama girişteki "Dus" sözlükten "duş"a yükselebilir."""
+    if len(giris) != len(ogrenilen):
+        return ogrenilen
+    sonuc = []
+    for g, o in zip(giris, ogrenilen):
+        if o in (_TR_LOWER_I, _TR_LOWER_DOTLESS_I):
+            sonuc.append(o)
+        elif o.isascii() and not g.isascii():
+            sonuc.append(g)
+        else:
+            sonuc.append(o)
+    return "".join(sonuc)
+
+
+def _kucuk_bicim(parca: str) -> str:
+    """Bir kelimenin doğru küçük-harf biçimi: öğrenilmişse onunla harf harf
+    birleştirilir; değilse ve kelime Türkçe'ye özgü harf (ş/ç/ğ/ö/ü)
+    içeriyorsa zaten Türkçe'dir, ı'lar korunur; onun dışında (marka/
+    İngilizce) I -> i."""
+    bilinen = _ogrenilen_kelimeler.get(parca.translate(_ASCII_FOLD).upper())
+    if bilinen:
+        return _harf_harf_birlestir(_turkce_kucult(parca), bilinen)
+    if _TURKCE_OZEL_HARFLER & set(parca):
+        return _turkce_kucult(parca)
+    return parca.replace(_TR_UPPER_I, _TR_LOWER_I).lower().replace(_TR_LOWER_DOTLESS_I, _TR_LOWER_I)
+
 
 def _tr_lower(word: str) -> str:
-    word = word.replace(_TR_UPPER_I, _TR_LOWER_I).replace(_TR_UPPER_DOTLESS_I, _TR_LOWER_DOTLESS_I)
-    return word.lower()
+    return _HARF_RUN_RE.sub(lambda m: _kucuk_bicim(m.group(0)), word)
+
+
+def _baslik_onar(baslik: str) -> str:
+    """Zaten büyük/küçük harfli bir başlıktaki (Katalog 'Trad') ı/i hatalarını
+    kelime bazında onarır, kelimenin baş harfi büyükse büyük bırakır.
+    Kaynak Sheet'e dokunmaz - sadece okurken uygulanır."""
+    def onar(m: re.Match) -> str:
+        parca = m.group(0)
+        if len(parca) <= 2:  # "6 Lı", "M.", "Ck" gibi ekler/kısaltmalar - dokunma
+            return parca
+        yeni = _kucuk_bicim(parca)
+        if parca[:1].isupper():
+            ilk = yeni[:1]
+            ilk = _TR_UPPER_I if ilk == _TR_LOWER_I else (_TR_UPPER_DOTLESS_I if ilk == _TR_LOWER_DOTLESS_I else ilk.upper())
+            yeni = ilk + yeni[1:]
+        return yeni
+    return _HARF_RUN_RE.sub(onar, baslik)
 
 
 def _tr_title_word(word: str) -> str:
@@ -304,6 +424,7 @@ def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
         trad_lookup = f_trad.result()
         adrev = f_adrev.result()
         icerik_lookup = f_icerik.result()
+    _kelime_bicimlerini_ogren(adrev, icerik_lookup)
 
     products: list[Product] = []
     for row in stok_rows:
@@ -320,7 +441,8 @@ def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
             continue
 
         raw_name = (row.get("ADI") or "").strip()
-        title = trad_lookup.get(barcode) or _expand_with_adrev(raw_name, adrev)
+        trad = trad_lookup.get(barcode)
+        title = _baslik_onar(trad) if trad else _expand_with_adrev(raw_name, adrev)
 
         grup_kodu = (row.get("ÜRÜN GRUBU") or "").strip()
         category_name = (
