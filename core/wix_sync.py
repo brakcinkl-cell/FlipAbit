@@ -340,9 +340,10 @@ def plan_olustur(wix: WixClient) -> tuple[Plan, wk.Yapi, dict[str, dict], list[s
 
 # ----------------------------------------------------------------- Uygulama
 def plani_uygula(wix: WixClient, plan: Plan, yapi: wk.Yapi, koleksiyon: dict[str, dict],
-                 diller: list[str], azami: int | None = None) -> None:
+                 diller: list[str], azami: int | None = None, sadece_kategori: bool = False) -> None:
     """Planı Wix'e yazar. `azami` verilirse toplam yazma isteği o sayıda
-    durur (ilk canlı denemede küçük bir dilimle doğrulamak için).
+    durur (ilk canlı denemede küçük bir dilimle doğrulamak için);
+    `sadece_kategori` ürün adımlarını atlar (koleksiyon/üyelik/çeviri/ağaç).
     Sıra: koleksiyonlar -> ürünler -> üyelikler -> çeviriler -> ağaç JSON."""
     def limit_doldu() -> bool:
         return azami is not None and wix.yazma_sayisi >= azami
@@ -358,26 +359,26 @@ def plani_uygula(wix: WixClient, plan: Plan, yapi: wk.Yapi, koleksiyon: dict[str
         wix.koleksiyon_guncelle(x["id"], {"visible": x["visible"]})
         logger.info("koleksiyon %s -> visible=%s", x["ad"], x["visible"])
 
-    for x in plan.guncelle:
+    for x in ([] if sadece_kategori else plan.guncelle):
         if limit_doldu(): break
         wix.urun_guncelle(x["id"], x["alanlar"])
         logger.info("guncellendi %s %s -> %s", x["sku"], x["name"], x["alanlar"])
-    for x in plan.gizle + plan.cift_sku_gizle:
+    for x in ([] if sadece_kategori else plan.gizle + plan.cift_sku_gizle):
         if limit_doldu(): break
         wix.urun_guncelle(x["id"], {"visible": False})
         logger.info("gizlendi %s %s", x["sku"], x["name"])
-    for x in plan.stok_yaz:
+    for x in ([] if sadece_kategori else plan.stok_yaz):
         if limit_doldu(): break
         wix.stok_yaz(x["id"], x["yeni"])
         logger.info("stok %s: %s -> %s", x["sku"], x["eski"], x["yeni"])
-    for x in plan.gorsel_ekle:
+    for x in ([] if sadece_kategori else plan.gorsel_ekle):
         if limit_doldu(): break
         try:
             wix.gorsel_ekle(x["id"], x["urls"])
             logger.info("gorsel eklendi %s", x["sku"])
         except RuntimeError as e:
             logger.warning("gorsel eklenemedi %s: %s", x["sku"], e)
-    for x in plan.olustur:
+    for x in ([] if sadece_kategori else plan.olustur):
         if limit_doldu(): break
         uid = wix.urun_olustur({
             "name": x["name"], "productType": "physical", "sku": x["sku"], "visible": True,
@@ -426,6 +427,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Sheets -> Wix Stores senkronu (varsayılan: kuru çalışma)")
     ap.add_argument("--uygula", action="store_true", help="Wix'e GERÇEKTEN yaz (yoksa sadece plan)")
     ap.add_argument("--azami", type=int, default=None, help="--uygula ile: en fazla bu kadar yazma isteği (deneme dilimi)")
+    ap.add_argument("--sadece-kategori", action="store_true", help="--uygula ile: ürün adımlarını atla, yalnız koleksiyon/üyelik/çeviri")
     args = ap.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -447,7 +449,7 @@ def main() -> None:
     if not args.uygula:
         print(f"KURU ÇALIŞMA - hiçbir şey yazılmadı. Ayrıntı: {PLAN_PATH}")
         return
-    plani_uygula(wix, plan, yapi, koleksiyon, diller, azami=args.azami)
+    plani_uygula(wix, plan, yapi, koleksiyon, diller, azami=args.azami, sadece_kategori=args.sadece_kategori)
     print(f"UYGULANDI - toplam yazma isteği: {wix.yazma_sayisi}")
 
 

@@ -114,6 +114,7 @@ def yapi_oku(rows: list[dict] | None = None) -> Yapi:
     ustler: dict[str, Kategori] = {}
     altlar: dict[str, Kategori] = {}
     kod_alt: dict[str, str] = {}
+    tr_alt: dict[str, str] = {}   # TR-UZUN -> alt anahtar (kullanıcı kararı 2026-09-29: TR adı aynıysa tek grup)
     uyarilar: list[str] = []
 
     for row in rows:
@@ -121,10 +122,18 @@ def yapi_oku(rows: list[dict] | None = None) -> Yapi:
         if not kod:
             continue
         alt_en = _temiz(row.get(ALT_AD_SUTUNU["en"]))
+        alt_tr = _temiz(row.get(ALT_AD_SUTUNU["tr"]))
         ust_en_ham = _temiz(row.get(UST_AD_SUTUNU["en"]))
         if not alt_en:
             uyarilar.append(f"{kod}: ENG-UZUN boş, atlandı")
             continue
+        if alt_tr and alt_tr in tr_alt and tr_alt[alt_tr] != alt_en:
+            # Aynı Türkçe ad, farklı İngilizce ad: ürünler ilk görülen koleksiyonda toplanır,
+            # ikinci bir alt grup OLUŞTURULMAZ.
+            uyarilar.append(f"{kod}: TR-UZUN '{alt_tr}' zaten '{tr_alt[alt_tr]}' altında, '{alt_en}' ayrı açılmadı")
+            alt_en = tr_alt[alt_tr]
+        elif alt_tr:
+            tr_alt.setdefault(alt_tr, alt_en)
         ust_sira, ust_en = _sira_ayir(ust_en_ham)
         if not ust_en:
             uyarilar.append(f"{kod}: UST-GRUP-EN boş, alt kategori üst grupsuz kalır")
