@@ -80,7 +80,8 @@ class WixClient:
         self.uygula = uygula
         self.yazma_sayisi = 0
 
-    def _istek(self, method: str, path: str, body: dict | None = None, yazma: bool = True) -> dict:
+    def _istek(self, method: str, path: str, body: dict | None = None, yazma: bool = True,
+               ag_tekrar: bool = True) -> dict:
         if yazma and not self.uygula:
             raise RuntimeError("kuru çalışmada yazma isteği çağrıldı - programlama hatası")
         for deneme in range(5):
@@ -88,7 +89,12 @@ class WixClient:
                 r = requests.request(method, BASE + path, headers=self.headers, json=body, timeout=60)
             except requests.exceptions.RequestException as e:
                 # Ağ kesintisi / bağlantı sıfırlama (2026-09-29'daki tam senkron ~1600.
-                # istekte 10054 ile düştü) - artan bekleme ile yeniden dene.
+                # istekte 10054 ile düştü) - artan bekleme ile yeniden dene. Ürün
+                # OLUŞTURMA gibi tekrarı güvenli olmayan isteklerde (ag_tekrar=False)
+                # denenmez: istek Wix'e ulaşıp yanıt yolda kopmuş olabilir, körlemesine
+                # tekrar çift kayıt üretir (2026-09-29'da 20 kadar ürün ikilendi).
+                if not ag_tekrar:
+                    raise
                 logger.warning("Wix %s %s ağ hatası (%s), %d. deneme", method, path, e.__class__.__name__, deneme + 1)
                 time.sleep(3 * (deneme + 1))
                 continue
@@ -123,9 +129,24 @@ class WixClient:
     def urun_guncelle(self, urun_id: str, alanlar: dict) -> None:
         self._istek("PATCH", f"/stores/v1/products/{urun_id}", {"product": alanlar})
 
+    def sku_ile_bul(self, sku: str) -> dict | None:
+        d = self._istek("POST", "/stores/v1/products/query",
+                        {"query": {"filter": json.dumps({"sku": sku})}, "includeHiddenProducts": True}, yazma=False)
+        urunler = d.get("products", [])
+        return urunler[0] if urunler else None
+
     def urun_olustur(self, alanlar: dict) -> str:
-        d = self._istek("POST", "/stores/v1/products", {"product": alanlar})
-        return d["product"]["id"]
+        """Ürünü oluşturur; ağ hatasında ya da 'sku is not unique' yanıtında
+        ürün SKU ile aranır - varsa (istek aslında ulaşmışsa) onun id'si döner."""
+        try:
+            d = self._istek("POST", "/stores/v1/products", {"product": alanlar}, ag_tekrar=False)
+            return d["product"]["id"]
+        except (RuntimeError, requests.exceptions.RequestException) as e:
+            mevcut = self.sku_ile_bul(alanlar.get("sku", ""))
+            if mevcut:
+                logger.warning("urun olusturma yaniti alinamadi ama SKU %s Wix'te var (%s): %s", alanlar.get("sku"), mevcut["id"], e)
+                return mevcut["id"]
+            raise RuntimeError(f"urun olusturulamadi {alanlar.get('sku')}: {e}") from e
 
     def stok_yaz(self, urun_id: str, miktar: int) -> None:
         self._istek("PATCH", f"/stores/v2/inventoryItems/product/{urun_id}", {"inventoryItem": {
