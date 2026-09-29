@@ -247,6 +247,25 @@ def api_musteri_kodu(kodu):
     return jsonify({"found": True, "musteriadi": musteri.musteriadi, "temsilci": musteri.temsilci})
 
 
+@app.route("/api/wix/kategoriler")
+def api_wix_kategoriler():
+    """www.ozgunaydin.net (Wix) sitesindeki Velo kodunun menüyü ve ana sayfa
+    kategori ızgarasını doldurmak için okuduğu kategori ağacı. Kaynak:
+    core/wix_sync.py'nin her senkronda yazdığı logs/wix_kategori_agaci.json
+    (Sheets 'grup' sekmesi -> Wix koleksiyonları). Herkese açık, salt-okunur,
+    kişisel veri içermez; Wix alan adından tarayıcı çağrısı için CORS açık."""
+    from core import wix_kategori
+    agac = wix_kategori.agac_oku()
+    if agac is None:
+        yanit = jsonify({"hata": "kategori agaci henuz olusmadi"})
+        yanit.status_code = 503
+    else:
+        yanit = jsonify(agac)
+        yanit.headers["Cache-Control"] = "public, max-age=300"
+    yanit.headers["Access-Control-Allow-Origin"] = "*"
+    return yanit
+
+
 @app.route("/ayarlar/fiyat-x2", methods=["POST"])
 def ayarlar_fiyat_x2():
     session["fiyat_x2"] = not session.get("fiyat_x2", False)
