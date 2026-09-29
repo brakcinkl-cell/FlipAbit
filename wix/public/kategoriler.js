@@ -22,9 +22,12 @@ export function dil() {
 }
 
 export function kategoriLink(slug) {
-    const d = dil();
-    const onek = d === 'en' ? '' : `/${d}`;
-    return `${onek}/category/${slug}`;
+    // DİL ÖNEKİ KENDİMİZ EKLENMEZ: Wix'in menü/link bileşeni relative linkleri
+    // (örn. "/category/x") aktif ziyaretçi diline göre KENDİSİ yerelleştiriyor.
+    // Daha önce burada "/tr" gibi bir önek de eklenince link "/tr/tr/category/..."
+    // olup 404 veriyordu (2026-09-29'da canlıda "Türkçede tıklayınca 404" ile
+    // bulundu) - EN de dahil hiçbir dil için önek eklenmez.
+    return `/category/${slug}`;
 }
 
 export function urunEtiketi(sayi) {
