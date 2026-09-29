@@ -115,10 +115,14 @@ class WixClient:
         (2026-09-29'da fark edildi: 1356 görünür / 4721 toplam) - gizliler
         görülmezse senkron onları yeniden oluşturmaya kalkar ("sku is not
         unique") ve stoğu gelen ürün asla yeniden görünür yapılamaz."""
+        # sort ŞART: sırasız offset sayfalamada Wix aynı ürünü iki kez verip
+        # başkasını atlıyor (2026-09-29: 4809 çekilen / 4746 benzersiz) - bu
+        # yüzden gerçek ürünler "çift SKU" sanılıp gizlendi, atlananlar
+        # yeniden oluşturulmaya çalışıldı. id'ye göre sıralı çekimde 4809/4809.
         urunler, offset = [], 0
         while True:
             d = self._istek("POST", "/stores/v1/products/query",
-                            {"query": {"paging": {"limit": 100, "offset": offset}},
+                            {"query": {"paging": {"limit": 100, "offset": offset}, "sort": json.dumps([{"id": "asc"}])},
                              "includeVariants": False, "includeHiddenProducts": True}, yazma=False)
             sayfa = d.get("products", [])
             urunler.extend(sayfa)
@@ -334,7 +338,7 @@ def plan_olustur(wix: WixClient) -> tuple[Plan, wk.Yapi, dict[str, dict], list[s
         else:
             if u.get("visible"):
                 plan.gizle.append({"id": uid, "sku": sku, "name": u.get("name"), "stok": ham_stok.get(sku, 0)})
-            gercek = ham_stok.get(sku, 0)
+            gercek = max(0, ham_stok.get(sku, 0))  # Sheets'te eksi stok olabiliyor, Wix'e 0 yazılır
             if mevcut_stok != gercek:
                 plan.stok_yaz.append({"id": uid, "sku": sku, "eski": mevcut_stok, "yeni": gercek})
 
