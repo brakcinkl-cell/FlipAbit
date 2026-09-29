@@ -83,8 +83,15 @@ class WixClient:
     def _istek(self, method: str, path: str, body: dict | None = None, yazma: bool = True) -> dict:
         if yazma and not self.uygula:
             raise RuntimeError("kuru çalışmada yazma isteği çağrıldı - programlama hatası")
-        for deneme in range(3):
-            r = requests.request(method, BASE + path, headers=self.headers, json=body, timeout=60)
+        for deneme in range(5):
+            try:
+                r = requests.request(method, BASE + path, headers=self.headers, json=body, timeout=60)
+            except requests.exceptions.RequestException as e:
+                # Ağ kesintisi / bağlantı sıfırlama (2026-09-29'daki tam senkron ~1600.
+                # istekte 10054 ile düştü) - artan bekleme ile yeniden dene.
+                logger.warning("Wix %s %s ağ hatası (%s), %d. deneme", method, path, e.__class__.__name__, deneme + 1)
+                time.sleep(3 * (deneme + 1))
+                continue
             if r.status_code == 429 or r.status_code >= 500:
                 time.sleep(2 * (deneme + 1))
                 continue
