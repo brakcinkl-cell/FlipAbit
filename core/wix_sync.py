@@ -257,6 +257,14 @@ class Plan:
         }
 
 
+def _duz_metin(s: str) -> str:
+    """HTML kaçışlarını kaç kat olursa olsun çözer ("&amp;amp;" -> "&")."""
+    onceki = None
+    while s != onceki:
+        onceki, s = s, html.unescape(s)
+    return s.strip()
+
+
 def _ham_stoklar() -> dict[str, int]:
     return {
         (row.get("BARKOD") or "").strip(): (cs._parse_int(row.get("STOK MİKTARI")) or 0)
@@ -316,10 +324,12 @@ def plan_olustur(wix: WixClient) -> tuple[Plan, wk.Yapi, dict[str, dict], list[s
                 alanlar["name"] = p.title
             if not u.get("visible"):
                 alanlar["visible"] = True
-            # Wix açıklamayı HTML olarak saklar ("&" -> "&amp;"); karşılaştırma
-            # çözülmüş haliyle, yoksa aynı 26 ürün her koşuda yeniden yazılıyor.
-            if ACIKLAMA_GUNCELLE and p.description and p.description != html.unescape(u.get("description") or ""):
-                alanlar["description"] = p.description[:8000]
+            # Wix açıklamayı HTML olarak saklar ("&" -> "&amp;"), Sheets'te de yer yer
+            # "&amp;"/"&amp;amp;" hazır kaçışlı metin var. İki taraf da tamamen
+            # çözülüp karşılaştırılır ve Wix'e çözülmüş düz metin yazılır (Wix
+            # kendi kaçışını yapar) - yoksa aynı ürünler her koşuda yeniden yazılır.
+            if ACIKLAMA_GUNCELLE and p.description and _duz_metin(p.description) != _duz_metin(u.get("description") or ""):
+                alanlar["description"] = _duz_metin(p.description)[:8000]
             if alanlar:
                 plan.guncelle.append({"id": uid, "sku": sku, "name": u.get("name"), "alanlar": alanlar,
                                       "eski_fiyat": mevcut_fiyat})
@@ -353,7 +363,7 @@ def plan_olustur(wix: WixClient) -> tuple[Plan, wk.Yapi, dict[str, dict], list[s
             plan.kategorisiz_kod[p.category_code] = plan.kategorisiz_kod.get(p.category_code, 0) + 1
         plan.olustur.append({
             "sku": sku, "name": p.title[:80], "price": round(p.price, 2), "stok": p.stock,
-            "description": (p.description or "")[:8000], "urls": p.images[:1], "koleksiyonlar": hedef,
+            "description": _duz_metin(p.description or "")[:8000], "urls": p.images[:1], "koleksiyonlar": hedef,
         })
 
     # --- kategori başına ürün sayısı, kapak görseli, görünürlük, çeviriler
