@@ -250,13 +250,23 @@ def _fetch_csv_rows(url: str) -> list[dict]:
     return list(csv.DictReader(io.StringIO(response.text)))
 
 
-def _fetch_grup_lookup() -> dict[str, str]:
+def _fetch_grup_lookup() -> dict[str, dict[str, str]]:
+    """GRUP KODU -> {"tr":.., "en":.., "ru":..} (ENG-UZUN/RU-UZUN boşsa o dil
+    sözlükte yok - kullanıcı isteği 2026-10-01: kategori adları da İngilizce/
+    Rusça gösterilsin, mevcut TR-UZUN'a dokunmadan)."""
     rows = _fetch_csv_rows(GRUP_URL)
-    return {
-        (row.get("GRUP KODU") or "").strip(): (row.get("TR-UZUN") or "").strip()
-        for row in rows
-        if (row.get("GRUP KODU") or "").strip()
-    }
+    result: dict[str, dict[str, str]] = {}
+    for row in rows:
+        kod = (row.get("GRUP KODU") or "").strip()
+        if not kod:
+            continue
+        d = {}
+        for dil, sutun in (("tr", "TR-UZUN"), ("en", "ENG-UZUN"), ("ru", "RU-UZUN")):
+            deger = (row.get(sutun) or "").strip()
+            if deger:
+                d[dil] = deger
+        result[kod] = d
+    return result
 
 
 def _clean_grup_kodu(grup_kodu: str) -> str:
@@ -409,12 +419,16 @@ class Product:
     # Henüz çeviri hesaplanmamışsa boş kalır, baslik()/aciklama() Türkçeye döner.
     title_i18n: dict[str, str] = field(default_factory=dict)
     description_i18n: dict[str, str] = field(default_factory=dict)
+    category_name_i18n: dict[str, str] = field(default_factory=dict)
 
     def baslik(self, dil: str) -> str:
         return self.title_i18n.get(dil) or self.title
 
     def aciklama(self, dil: str) -> str:
         return self.description_i18n.get(dil) or self.description
+
+    def kategori_adi(self, dil: str) -> str | None:
+        return self.category_name_i18n.get(dil) or self.category_name
 
 
 # Cloudinary URL'lerindeki "/v1746104308/" gibi sürüm segmenti aslında o
@@ -512,11 +526,19 @@ def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
         title = _baslik_onar(trad) if trad else _expand_with_adrev(raw_name, adrev)
 
         grup_kodu = (row.get("ÜRÜN GRUBU") or "").strip()
+        grup_adlari = grup_lookup.get(grup_kodu) or {}
         category_name = (
             CATEGORY_NAME_OVERRIDES.get(grup_kodu)
-            or grup_lookup.get(grup_kodu)
+            or grup_adlari.get("tr")
             or (_clean_grup_kodu(grup_kodu) if grup_kodu else None)
         )
+        # EN/RU kategori adı - sadece grup_lookup'tan (override/clean fallback
+        # TR'dir, çevirisi yok); TR-UZUN ile aynıysa (override kullanıldıysa)
+        # eklenmez, kategori_adi() zaten category_name'e düşer.
+        category_name_i18n = {
+            dil: ad for dil, ad in grup_adlari.items()
+            if dil != "tr" and ad and category_name == grup_adlari.get("tr")
+        }
 
         images = resimler_lookup.get(barcode)
         if not images:
@@ -536,6 +558,7 @@ def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
             resim_tarihi=_resim_yukleme_tarihi(images[0] if images else None),
             title_i18n=baslik_ceviri_lookup.get(barcode, {}),
             description_i18n=icerik_ceviri_lookup.get(barcode, {}),
+            category_name_i18n=category_name_i18n,
         ))
 
     logger.info("catalog_source: %d ürün (stok >= %d, fiyat > 0)", len(products), min_stock)

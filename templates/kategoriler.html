@@ -1,23 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Kategoriler - Özdilek Toptan{% endblock %}
 {% block content %}
-<h2>Kategoriler</h2>
+<h2>{{ t('kategoriler_baslik') }}</h2>
 {% if not kategoriler %}
-<div class="bos-durum">Katalogda ürün bulunamadı.</div>
+<div class="bos-durum">{{ t('katalog_bos') }}</div>
 {% else %}
 <form class="arama-bar" id="kategoriler-arama-form" onsubmit="return false;">
-    <input type="text" id="kategoriler-arama-kutusu" placeholder="Kategori ara..." autocomplete="off" autofocus>
+    <input type="text" id="kategoriler-arama-kutusu" placeholder="{{ t('kategori_ara_placeholder') }}" autocomplete="off" autofocus>
 </form>
 <div class="kategori-liste" id="kategoriler-liste">
     {% for k in kategoriler %}
-    <a class="kategori-satir" href="{{ url_for('kategori_urunleri', kategori_adi=k.ad) }}" data-ad="{{ k.ad|lower }}">
-        <span class="ad">{{ k.ad }}</span>
-        <span class="sayi">{{ k.urun_sayisi }} ürün</span>
+    <a class="kategori-satir" href="{{ url_for('kategori_urunleri', kategori_adi=k.ad) }}" data-ad="{{ k.ad_goster|lower }}">
+        <span class="ad">{{ k.ad_goster }}</span>
+        <span class="sayi">{{ k.urun_sayisi }} {{ t('urun_sayisi_etiket') }}</span>
         <span class="ok">&rsaquo;</span>
     </a>
     {% endfor %}
 </div>
-<div class="bos-durum" id="kategoriler-arama-bos-durum" hidden>Aramanızla eşleşen kategori bulunamadı.</div>
+<div class="bos-durum" id="kategoriler-arama-bos-durum" hidden>{{ t('kategori_eslesme_yok') }}</div>
 {% endif %}
 {% endblock %}
 

@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Bekleyen Siparişlerim - Özdilek Toptan{% endblock %}
 {% block content %}
-<h2>Bekleyen Siparişlerim</h2>
-<p style="color:#888; font-size:13px;">Onayladığınız, henüz tarafımızca işleme alınmamış siparişleriniz.</p>
+<h2>{{ t('bekleyen_siparislerim_baslik') }}</h2>
+<p style="color:#888; font-size:13px;">{{ t('bekleyen_aciklama') }}</p>
 
 {% if not satirlar %}
-<div class="bos-durum">Bekleyen siparişiniz yok.</div>
+<div class="bos-durum">{{ t('bekleyen_siparis_yok') }}</div>
 {% else %}
 <table class="siparis-tablosu">
     <thead>
         <tr>
-            <th>Ürün</th>
-            <th>Miktar</th>
-            <th>Birim Fiyat</th>
-            <th>Satır Toplamı</th>
-            <th>Tarih</th>
+            <th>{{ t('th_urun') }}</th>
+            <th>{{ t('th_miktar') }}</th>
+            <th>{{ t('th_birim_fiyat') }}</th>
+            <th>{{ t('th_satir_toplami') }}</th>
+            <th>{{ t('th_tarih') }}</th>
         </tr>
     </thead>
     <tbody>
@@ -30,6 +30,6 @@
     </tbody>
 </table>
 
-<div class="toplam-satiri">Toplam: {{ "%.2f"|format(toplam) }} ₺</div>
+<div class="toplam-satiri">{{ t('toplam_etiket') }} {{ "%.2f"|format(toplam) }} ₺</div>
 {% endif %}
 {% endblock %}

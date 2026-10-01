@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Sepetim - Özdilek Toptan{% endblock %}
 {% block content %}
-<h2>Sepetim</h2>
+<h2>{{ t('sepetim') }}</h2>
 
 {% if not satirlar %}
-<div class="bos-durum">Sepetinizde ürün yok.</div>
+<div class="bos-durum">{{ t('sepet_bos') }}</div>
 {% else %}
 <table class="siparis-tablosu">
     <thead>
         <tr>
-            <th>Ürün</th>
-            <th>Miktar</th>
-            <th>Birim Fiyat</th>
-            <th>Satır Toplamı</th>
+            <th>{{ t('th_urun') }}</th>
+            <th>{{ t('th_miktar') }}</th>
+            <th>{{ t('th_birim_fiyat') }}</th>
+            <th>{{ t('th_satir_toplami') }}</th>
             <th></th>
         </tr>
     </thead>
@@ -25,7 +25,7 @@
                     <input type="hidden" name="no" value="{{ s['NO'] }}">
                     <input type="hidden" name="barkod" value="{{ s['barkod'] }}">
                     <input type="number" name="miktar" value="{{ s['miktar'] }}" min="1" max="{{ s['guncel_stok'] }}" onchange="this.form.requestSubmit()">
-                    <button class="btn btn-outline sepet-guncelle-btn" type="submit" title="Miktarı güncelle">↻</button>
+                    <button class="btn btn-outline sepet-guncelle-btn" type="submit" title="{{ t('miktar_guncelle_baslik') }}">↻</button>
                 </form>
             </td>
             <td>{{ "%.2f"|format(s['birim fiyat']) }} ₺</td>
@@ -33,7 +33,7 @@
             <td>
                 <form method="post" action="{{ url_for('sepet_sil') }}">
                     <input type="hidden" name="no" value="{{ s['NO'] }}">
-                    <button class="sepet-sil-btn" type="submit" title="Sepetten kaldır">✕</button>
+                    <button class="sepet-sil-btn" type="submit" title="{{ t('sepetten_kaldir_baslik') }}">✕</button>
                 </form>
             </td>
         </tr>
@@ -41,11 +41,11 @@
     </tbody>
 </table>
 
-<div class="toplam-satiri">Toplam: {{ "%.2f"|format(toplam) }} ₺</div>
+<div class="toplam-satiri">{{ t('toplam_etiket') }} {{ "%.2f"|format(toplam) }} ₺</div>
 
 <form method="post" action="{{ url_for('onayla') }}" style="text-align:right;"
-      onsubmit="if (!confirm('Siparişi onaylıyor musunuz? Bu işlem geri alınamaz.')) return false; this.querySelector('button').disabled = true;">
-    <button class="btn btn-orange" type="submit">Siparişi Onayla</button>
+      onsubmit="if (!confirm('{{ t('siparis_onay_confirm') }}')) return false; this.querySelector('button').disabled = true;">
+    <button class="btn btn-orange" type="submit">{{ t('siparisi_onayla') }}</button>
 </form>
 {% endif %}
 {% endblock %}

@@ -8,26 +8,26 @@
 
     <form method="post" action="{{ url_for('giris') }}" id="giris-form">
         <input class="form-field" type="text" name="firma_adi" id="firma_adi"
-               placeholder="Firma adı (veya müşteri kodu)" value="{{ firma_adi or '' }}" autocomplete="off">
+               placeholder="{{ t('giris_firma_placeholder') }}" value="{{ firma_adi or '' }}" autocomplete="off">
         <input class="form-field" type="text" name="temsilci" id="temsilci"
-               placeholder="Müşteri Temsilcisi Adı" value="{{ temsilci or '' }}">
-        <input class="form-field" type="password" name="sifre" placeholder="Şifre">
+               placeholder="{{ t('giris_temsilci_placeholder') }}" value="{{ temsilci or '' }}">
+        <input class="form-field" type="password" name="sifre" placeholder="{{ t('giris_sifre_placeholder') }}">
 
         <div class="kvkk-row">
             <label class="switch">
                 <input type="checkbox" name="kvkk" id="kvkk" checked>
                 <span class="slider"></span>
             </label>
-            <span>Gizlilik politikasını kabul ediyorum</span>
+            <span>{{ t('giris_kvkk') }}</span>
         </div>
 
         <div class="btn-row">
-            <a class="btn btn-navy" href="{{ url_for('urun_arama') }}">Ürünleri Görüntüle</a>
-            <button class="btn btn-orange" type="submit">▶ Giriş</button>
+            <a class="btn btn-navy" href="{{ url_for('urun_arama') }}">{{ t('giris_urunleri_goruntule') }}</a>
+            <button class="btn btn-orange" type="submit">{{ t('giris_buton') }}</button>
         </div>
     </form>
 
-    <div class="footer-links"><a href="{{ url_for('gizlilik_politikasi') }}">Gizlilik Politikasına bakın</a></div>
+    <div class="footer-links"><a href="{{ url_for('gizlilik_politikasi') }}">{{ t('gizlilik_link') }}</a></div>
 </div>
 
 <script>

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr">
+<html lang="{{ dil }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,25 +13,32 @@
 <nav class="navbar">
     {% if kullanici_adi %}
         <a href="{{ url_for('kategoriler') }}" class="nav-item">
-            <span class="icon">📦</span><span>Kategoriler</span>
+            <span class="icon">📦</span><span>{{ t('nav_kategoriler') }}</span>
         </a>
     {% endif %}
     <a href="{{ url_for('urun_arama') if kullanici_adi else url_for('giris') }}" class="nav-item">
-        <span class="icon">🔍</span><span>Ürün Arama</span>
+        <span class="icon">🔍</span><span>{{ t('nav_urun_arama') }}</span>
     </a>
     {% if kullanici_adi %}
         <a href="{{ url_for('bekleyen_siparislerim') }}" class="nav-item">
-            <span class="icon">📄</span><span>Bekleyen<br>siparişlerim</span>
+            <span class="icon">📄</span><span>{{ t('nav_bekleyen_1') }}<br>{{ t('nav_bekleyen_2') }}</span>
         </a>
     {% endif %}
     <a href="{{ url_for('giris') }}" class="nav-item {{ 'active' if not kullanici_adi }}">
-        <span class="icon">👤</span><span>Girişe Git</span>
+        <span class="icon">👤</span><span>{{ t('nav_girise_git') }}</span>
     </a>
     <a href="{{ url_for('sepet') if kullanici_adi else url_for('giris') }}" class="nav-item">
-        <span class="icon icon-sepet">🛒{% if sepet_sayisi %}<span class="sepet-rozet">{{ sepet_sayisi }}</span>{% endif %}</span><span>Sepete Git</span>
+        <span class="icon icon-sepet">🛒{% if sepet_sayisi %}<span class="sepet-rozet">{{ sepet_sayisi }}</span>{% endif %}</span><span>{{ t('nav_sepete_git') }}</span>
     </a>
+    <div class="dil-secici">
+        <select onchange="window.location.href=this.value">
+            {% for kod, ad in DIL_ADLARI.items() %}
+            <option value="{{ url_for('dil_degistir', kod=kod) }}" {{ 'selected' if dil == kod }}>{{ DIL_BAYRAK[kod] }} {{ ad }}</option>
+            {% endfor %}
+        </select>
+    </div>
     <form method="post" action="{{ url_for('ayarlar_fiyat_x2') }}" class="toggle-x2">
-        <label class="switch" title="Fiyatları ×2 göster">
+        <label class="switch" title="{{ t('nav_fiyat_x2_baslik') }}">
             <input type="checkbox" onchange="this.form.submit()" {{ 'checked' if fiyat_x2 }}>
             <span class="slider"></span>
         </label>

@@ -1,5 +1,5 @@
 {% if arama and not urunler %}
-<div class="bos-durum">Sonuç bulunamadı.</div>
+<div class="bos-durum">{{ t('sonuc_bulunamadi') }}</div>
 {% endif %}
 
 <div class="urun-grid">
@@ -9,7 +9,7 @@
             {% if u.resim %}
             <img src="{{ u.resim }}" alt="{{ u.baslik }}" loading="lazy">
             {% else %}
-            <div class="resim-yok">Ürün Görseli Hazırlanıyor</div>
+            <div class="resim-yok">{{ t('resim_hazirlaniyor') }}</div>
             {% endif %}
         </a>
         <div class="bilgi">
@@ -17,7 +17,7 @@
             {% if kullanici_adi %}
             <div class="fiyat">{{ "%.2f"|format(u.fiyat) }} ₺</div>
             {% else %}
-            <div class="fiyat fiyat-gizli">Fiyat için giriş yapın</div>
+            <div class="fiyat fiyat-gizli">{{ t('fiyat_icin_giris') }}</div>
             {% endif %}
             <div class="stok">{{ u.kategori }}</div>
         </div>
@@ -26,7 +26,7 @@
             <input type="hidden" name="barkod" value="{{ u.barkod }}">
             <input type="hidden" name="donus_url" value="{{ request.full_path }}">
             <input type="number" name="miktar" value="1" min="1" max="{{ u.stok }}">
-            <button class="btn btn-orange" type="submit">Sepete Ekle</button>
+            <button class="btn btn-orange" type="submit">{{ t('sepete_ekle') }}</button>
         </form>
         {% endif %}
     </div>

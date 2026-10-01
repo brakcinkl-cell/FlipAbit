@@ -3,15 +3,15 @@
 {% block content %}
 {% if not kullanici_adi %}
 <p class="basvuru-uyari">
-    Toptan fiyatları görmek ve sipariş verebilmek için lütfen
-    <a href="{{ url_for('giris') }}">giriş yapın</a> ya da satıcımız olmak için başvurun.
-    <a class="btn btn-navy basvuru-uyari-buton" href="{{ url_for('basvuru') }}">🏢 Başvuru Yap</a>
+    {{ t('giris_uyari_on') }}
+    <a href="{{ url_for('giris') }}">{{ t('giris_uyari_giris_link') }}</a>{{ t('giris_uyari_orta') }}
+    <a class="btn btn-navy basvuru-uyari-buton" href="{{ url_for('basvuru') }}">{{ t('basvuru_yap_buton') }}</a>
 </p>
 {% endif %}
-<h2>Ürün Arama</h2>
+<h2>{{ t('urun_arama_baslik') }}</h2>
 <form class="arama-bar" id="urun-arama-form" method="get">
-    <input type="text" name="q" id="urun-arama-kutusu" placeholder="Ürün adı veya barkod..." value="{{ arama }}" autofocus autocomplete="off">
-    <button class="btn btn-outline" type="submit">Ara</button>
+    <input type="text" name="q" id="urun-arama-kutusu" placeholder="{{ t('urun_arama_placeholder') }}" value="{{ arama }}" autofocus autocomplete="off">
+    <button class="btn btn-outline" type="submit">{{ t('ara_buton') }}</button>
 </form>
 
 <div id="urun-sonuclari">

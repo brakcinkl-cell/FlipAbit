@@ -1,33 +1,33 @@
 {% extends "base.html" %}
-{% block title %}{{ kategori_adi }} - Özdilek Toptan{% endblock %}
+{% block title %}{{ kategori_baslik }} - Özdilek Toptan{% endblock %}
 {% block content %}
-<a href="{{ url_for('kategoriler') }}">&larr; Kategoriler</a>
-<h2>{{ kategori_adi }}</h2>
+<a href="{{ url_for('kategoriler') }}">{{ t('geri_kategoriler') }}</a>
+<h2>{{ kategori_baslik }}</h2>
 
 <form class="arama-bar" id="kategori-arama-form" method="get">
-    <input type="text" name="q" id="kategori-arama-kutusu" placeholder="Bu kategoride ara..." value="{{ arama }}" autocomplete="off">
+    <input type="text" name="q" id="kategori-arama-kutusu" placeholder="{{ t('bu_kategoride_ara_placeholder') }}" value="{{ arama }}" autocomplete="off">
     <select name="sirala" onchange="this.form.submit()">
-        <option value="">Sıralama</option>
+        <option value="">{{ t('siralama') }}</option>
         {% for deger, bilgi in siralama_secenekleri.items() %}
-        <option value="{{ deger }}" {{ "selected" if sirala == deger }}>{{ bilgi[0] }}</option>
+        <option value="{{ deger }}" {{ "selected" if sirala == deger }}>{{ t(bilgi[0]) }}</option>
         {% endfor %}
     </select>
-    <button class="btn btn-outline" type="submit">Ara</button>
+    <button class="btn btn-outline" type="submit">{{ t('ara_buton') }}</button>
 </form>
 
 {% if not urunler %}
-<div class="bos-durum">Bu kategoride ürün bulunamadı.</div>
+<div class="bos-durum">{{ t('kategoride_urun_yok') }}</div>
 {% endif %}
 
 <div class="urun-grid" id="kategori-urun-grid">
     {% for u in urunler %}
     <div class="urun-card" data-baslik="{{ u.baslik|lower }}" data-barkod="{{ u.barkod }}">
         <a href="{{ url_for('urun_detay', barkod=u.barkod) }}" style="position:relative; display:block;">
-            {% if u.yeni %}<span class="yeni-rozet">Yeni</span>{% endif %}
+            {% if u.yeni %}<span class="yeni-rozet">{{ t('yeni_rozet') }}</span>{% endif %}
             {% if u.resim %}
             <img src="{{ u.resim }}" alt="{{ u.baslik }}" loading="lazy">
             {% else %}
-            <div class="resim-yok">Ürün Görseli Hazırlanıyor</div>
+            <div class="resim-yok">{{ t('resim_hazirlaniyor') }}</div>
             {% endif %}
         </a>
         <div class="bilgi">
@@ -38,12 +38,12 @@
             <input type="hidden" name="barkod" value="{{ u.barkod }}">
             <input type="hidden" name="donus_url" value="{{ request.full_path }}">
             <input type="number" name="miktar" value="1" min="1" max="{{ u.stok }}">
-            <button class="btn btn-orange" type="submit">Sepete Ekle</button>
+            <button class="btn btn-orange" type="submit">{{ t('sepete_ekle') }}</button>
         </form>
     </div>
     {% endfor %}
 </div>
-<div class="bos-durum" id="kategori-arama-bos-durum" hidden>Aramanızla eşleşen ürün bulunamadı.</div>
+<div class="bos-durum" id="kategori-arama-bos-durum" hidden>{{ t('urun_eslesme_yok') }}</div>
 {% endblock %}
 
 {% block scripts %}

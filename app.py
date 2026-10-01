@@ -56,6 +56,131 @@ LOGIN_PASSWORD = "Ozd123"
 # gösterilir ve kategori içinde başa alınır (kullanıcının 2026-09-23 isteği).
 YENI_URUN_GUN_SAYISI = 21
 
+# Arayüz çok dilliliği - kullanıcı isteği 2026-10-01 ("ingilizce ve rusça
+# yapalım"). Ürün adı/açıklaması/kategori adı çevirileri Sheets'ten gelir
+# (core/catalog_source.py'nin Product.baslik()/aciklama()/kategori_adi()
+# metodları, core/ceviri_bakim.py'nin doldurduğu GOOGLETRANSLATE
+# sütunlarından); BURADAKİ METINLER sözlüğü sadece sabit arayüz metinleri
+# (buton, menü, mesaj) içindir, elle çevrilmiştir.
+DIL_VARSAYILAN = "tr"
+DIL_ADLARI = {"tr": "Türkçe", "en": "English", "ru": "Русский"}
+DIL_BAYRAK = {"tr": "🇹🇷", "en": "🇬🇧", "ru": "🇷🇺"}
+
+METINLER: dict[str, dict[str, str]] = {
+    # --- nav (base.html) ---
+    "nav_kategoriler": {"tr": "Kategoriler", "en": "Categories", "ru": "Категории"},
+    "nav_urun_arama": {"tr": "Ürün Arama", "en": "Search", "ru": "Поиск"},
+    "nav_bekleyen_1": {"tr": "Bekleyen", "en": "Pending", "ru": "Ожидающие"},
+    "nav_bekleyen_2": {"tr": "siparişlerim", "en": "orders", "ru": "заказы"},
+    "nav_girise_git": {"tr": "Girişe Git", "en": "Log In", "ru": "Войти"},
+    "nav_sepete_git": {"tr": "Sepete Git", "en": "Cart", "ru": "Корзина"},
+    "nav_fiyat_x2_baslik": {"tr": "Fiyatları ×2 göster", "en": "Show prices ×2", "ru": "Показать цены ×2"},
+    # --- giriş ---
+    "giris_firma_placeholder": {"tr": "Firma adı (veya müşteri kodu)", "en": "Company name (or customer code)", "ru": "Название компании (или код клиента)"},
+    "giris_temsilci_placeholder": {"tr": "Müşteri Temsilcisi Adı", "en": "Sales Representative Name", "ru": "Имя торгового представителя"},
+    "giris_sifre_placeholder": {"tr": "Şifre", "en": "Password", "ru": "Пароль"},
+    "giris_kvkk": {"tr": "Gizlilik politikasını kabul ediyorum", "en": "I accept the privacy policy", "ru": "Я принимаю политику конфиденциальности"},
+    "giris_urunleri_goruntule": {"tr": "Ürünleri Görüntüle", "en": "View Products", "ru": "Просмотреть товары"},
+    "giris_buton": {"tr": "▶ Giriş", "en": "▶ Log In", "ru": "▶ Войти"},
+    "gizlilik_link": {"tr": "Gizlilik Politikasına bakın", "en": "View Privacy Policy", "ru": "Политика конфиденциальности"},
+    "hata_kvkk": {"tr": "Gizlilik politikasını kabul etmelisiniz.", "en": "You must accept the privacy policy.", "ru": "Вы должны принять политику конфиденциальности."},
+    "hata_zorunlu_alan": {"tr": "Firma adı ve Müşteri Temsilcisi Adı zorunludur.", "en": "Company name and Sales Representative Name are required.", "ru": "Название компании и имя представителя обязательны."},
+    "hata_sifre": {"tr": "Şifre hatalı.", "en": "Incorrect password.", "ru": "Неверный пароль."},
+    # --- kategoriler ---
+    "kategoriler_baslik": {"tr": "Kategoriler", "en": "Categories", "ru": "Категории"},
+    "katalog_bos": {"tr": "Katalogda ürün bulunamadı.", "en": "No products found in the catalog.", "ru": "Товары в каталоге не найдены."},
+    "kategori_ara_placeholder": {"tr": "Kategori ara...", "en": "Search categories...", "ru": "Поиск категорий..."},
+    "urun_sayisi_etiket": {"tr": "ürün", "en": "products", "ru": "товаров"},
+    "kategori_eslesme_yok": {"tr": "Aramanızla eşleşen kategori bulunamadı.", "en": "No categories match your search.", "ru": "Категории по запросу не найдены."},
+    "kategori_diger": {"tr": "Diğer", "en": "Other", "ru": "Другое"},
+    # --- kategori / ürün listesi ---
+    "geri_kategoriler": {"tr": "← Kategoriler", "en": "← Categories", "ru": "← Категории"},
+    "bu_kategoride_ara_placeholder": {"tr": "Bu kategoride ara...", "en": "Search in this category...", "ru": "Поиск в этой категории..."},
+    "siralama": {"tr": "Sıralama", "en": "Sort", "ru": "Сортировка"},
+    "ara_buton": {"tr": "Ara", "en": "Search", "ru": "Искать"},
+    "kategoride_urun_yok": {"tr": "Bu kategoride ürün bulunamadı.", "en": "No products found in this category.", "ru": "Товары в этой категории не найдены."},
+    "yeni_rozet": {"tr": "Yeni", "en": "New", "ru": "Новинка"},
+    "resim_hazirlaniyor": {"tr": "Ürün Görseli Hazırlanıyor", "en": "Product Image Coming Soon", "ru": "Изображение товара готовится"},
+    "sepete_ekle": {"tr": "Sepete Ekle", "en": "Add to Cart", "ru": "В корзину"},
+    "urun_eslesme_yok": {"tr": "Aramanızla eşleşen ürün bulunamadı.", "en": "No products match your search.", "ru": "Товары по запросу не найдены."},
+    "sirala_fiyat_artan": {"tr": "Fiyat: Düşükten Yükseğe", "en": "Price: Low to High", "ru": "Цена: по возрастанию"},
+    "sirala_fiyat_azalan": {"tr": "Fiyat: Yüksekten Düşüğe", "en": "Price: High to Low", "ru": "Цена: по убыванию"},
+    "sirala_isim_az": {"tr": "İsim: A-Z", "en": "Name: A-Z", "ru": "Название: А-Я"},
+    "sirala_isim_za": {"tr": "İsim: Z-A", "en": "Name: Z-A", "ru": "Название: Я-А"},
+    # --- ürün detay ---
+    "geri": {"tr": "← Geri", "en": "← Back", "ru": "← Назад"},
+    "fiyat_icin_giris": {"tr": "Fiyat için giriş yapın", "en": "Log in to see price", "ru": "Войдите, чтобы увидеть цену"},
+    "barkod_etiket": {"tr": "Barkod:", "en": "Barcode:", "ru": "Штрихкод:"},
+    "siparis_icin_giris_on": {"tr": "Sipariş verebilmek için ", "en": "Please ", "ru": "Чтобы оформить заказ, "},
+    "siparis_icin_giris_link": {"tr": "giriş yapın", "en": "log in", "ru": "войдите"},
+    "siparis_icin_giris_son": {"tr": ".", "en": " to place an order.", "ru": "."},
+    # --- sepet / bekleyen ---
+    "sepetim": {"tr": "Sepetim", "en": "My Cart", "ru": "Моя корзина"},
+    "sepet_bos": {"tr": "Sepetinizde ürün yok.", "en": "Your cart is empty.", "ru": "Ваша корзина пуста."},
+    "th_urun": {"tr": "Ürün", "en": "Product", "ru": "Товар"},
+    "th_miktar": {"tr": "Miktar", "en": "Qty", "ru": "Кол-во"},
+    "th_birim_fiyat": {"tr": "Birim Fiyat", "en": "Unit Price", "ru": "Цена за ед."},
+    "th_satir_toplami": {"tr": "Satır Toplamı", "en": "Line Total", "ru": "Сумма по строке"},
+    "th_tarih": {"tr": "Tarih", "en": "Date", "ru": "Дата"},
+    "miktar_guncelle_baslik": {"tr": "Miktarı güncelle", "en": "Update quantity", "ru": "Обновить количество"},
+    "sepetten_kaldir_baslik": {"tr": "Sepetten kaldır", "en": "Remove from cart", "ru": "Удалить из корзины"},
+    "toplam_etiket": {"tr": "Toplam:", "en": "Total:", "ru": "Итого:"},
+    "siparisi_onayla": {"tr": "Siparişi Onayla", "en": "Confirm Order", "ru": "Подтвердить заказ"},
+    "siparis_onay_confirm": {"tr": "Siparişi onaylıyor musunuz? Bu işlem geri alınamaz.", "en": "Confirm this order? This cannot be undone.", "ru": "Подтвердить заказ? Это действие необратимо."},
+    "bekleyen_siparislerim_baslik": {"tr": "Bekleyen Siparişlerim", "en": "My Pending Orders", "ru": "Мои ожидающие заказы"},
+    "bekleyen_aciklama": {"tr": "Onayladığınız, henüz tarafımızca işleme alınmamış siparişleriniz.", "en": "Orders you've confirmed that haven't been processed by us yet.", "ru": "Подтверждённые вами заказы, ещё не обработанные нами."},
+    "bekleyen_siparis_yok": {"tr": "Bekleyen siparişiniz yok.", "en": "You have no pending orders.", "ru": "У вас нет ожидающих заказов."},
+    # --- arama ---
+    "urun_arama_baslik": {"tr": "Ürün Arama", "en": "Search Products", "ru": "Поиск товаров"},
+    "urun_arama_placeholder": {"tr": "Ürün adı veya barkod...", "en": "Product name or barcode...", "ru": "Название товара или штрихкод..."},
+    "sonuc_bulunamadi": {"tr": "Sonuç bulunamadı.", "en": "No results found.", "ru": "Результаты не найдены."},
+    "giris_uyari_on": {"tr": "Toptan fiyatları görmek ve sipariş verebilmek için lütfen ", "en": "To see wholesale prices and place orders, please ", "ru": "Чтобы увидеть оптовые цены и оформить заказ, пожалуйста "},
+    "giris_uyari_giris_link": {"tr": "giriş yapın", "en": "log in", "ru": "войдите"},
+    "giris_uyari_orta": {"tr": " ya da satıcımız olmak için başvurun.", "en": " or apply to become our dealer.", "ru": " или подайте заявку, чтобы стать нашим дилером."},
+    "basvuru_yap_buton": {"tr": "🏢 Başvuru Yap", "en": "🏢 Apply Now", "ru": "🏢 Подать заявку"},
+    # --- başvuru ---
+    "basvuru_baslik": {"tr": "Bayilik Başvurusu", "en": "Dealership Application", "ru": "Заявка на дилерство"},
+    "basvuru_uyari_basvuru_sayfasi": {"tr": "Toptan fiyatları görmek ve sipariş verebilmek için lütfen ", "en": "To see wholesale prices and place orders, please ", "ru": "Чтобы увидеть оптовые цены и оформить заказ, пожалуйста "},
+    "basvuru_uyari_orta": {"tr": " ya da aşağıdaki formla satıcımız olmak için başvurun.", "en": " or apply below to become our dealer.", "ru": " или подайте заявку ниже, чтобы стать нашим дилером."},
+    "basvuru_basarili": {"tr": "Başvurunuz alındı, en kısa sürede sizinle iletişime geçeceğiz.", "en": "Your application has been received, we'll contact you soon.", "ru": "Ваша заявка получена, мы скоро свяжемся с вами."},
+    "basvuru_firma_placeholder": {"tr": "Firma / Ad Soyad", "en": "Company / Full Name", "ru": "Компания / ФИО"},
+    "basvuru_email_placeholder": {"tr": "E-posta", "en": "Email", "ru": "Эл. почта"},
+    "basvuru_telefon_placeholder": {"tr": "Telefon", "en": "Phone", "ru": "Телефон"},
+    "basvuru_adres_placeholder": {"tr": "Adres", "en": "Address", "ru": "Адрес"},
+    "basvuru_mesaj_placeholder": {"tr": "Mesajınız (opsiyonel)", "en": "Your message (optional)", "ru": "Ваше сообщение (необязательно)"},
+    "basvuru_iletisim_buton": {"tr": "🏢 İletişime Geçin", "en": "🏢 Contact Us", "ru": "🏢 Связаться с нами"},
+    "basvuru_hata_zorunlu": {"tr": "Firma adı, e-posta ve telefon zorunludur.", "en": "Company name, email, and phone are required.", "ru": "Название компании, эл. почта и телефон обязательны."},
+    # --- flash/hata ---
+    "sepete_eklendi_son": {"tr": "sepete eklendi.", "en": "added to cart.", "ru": "добавлено в корзину."},
+    "hata_urun_bulunamadi": {"tr": "Ürün bulunamadı.", "en": "Product not found.", "ru": "Товар не найден."},
+    "hata_sayfa_bulunamadi": {"tr": "Sayfa bulunamadı.", "en": "Page not found.", "ru": "Страница не найдена."},
+    "hata_katalog_yuklenemedi": {"tr": "Ürün kataloğu şu an yüklenemiyor, lütfen biraz sonra tekrar deneyin.", "en": "The product catalog can't be loaded right now, please try again shortly.", "ru": "Каталог товаров сейчас недоступен, попробуйте позже."},
+    "hata_sunucu": {"tr": "Beklenmedik bir hata oluştu, lütfen tekrar deneyin.", "en": "An unexpected error occurred, please try again.", "ru": "Произошла непредвиденная ошибка, попробуйте снова."},
+}
+
+
+def t(key: str) -> str:
+    dil = session.get("dil", DIL_VARSAYILAN)
+    metinler = METINLER.get(key)
+    if not metinler:
+        return key
+    return metinler.get(dil) or metinler.get(DIL_VARSAYILAN) or key
+
+
+def _dil() -> str:
+    return session.get("dil", DIL_VARSAYILAN)
+
+
+def _urun_eslesiyor(urun, q: str) -> bool:
+    """Arama sorgusu, ürünün HANGİ DİLDE olursa olsun adıyla (TR/EN/RU) veya
+    barkoduyla eşleşirse True - İngilizce/Rusça arayüzde kullanıcı kendi
+    dilinde yazsa da ürünü bulabilsin (kullanıcı isteği 2026-10-01)."""
+    if q in urun.barcode:
+        return True
+    if q in urun.title.lower():
+        return True
+    return any(q in ad.lower() for ad in urun.title_i18n.values())
+
 
 def _yeni_mi(urun) -> bool:
     if not urun.resim_tarihi:
@@ -97,7 +222,23 @@ def inject_globals():
         "fiyat_x2": session.get("fiyat_x2", False),
         "asset_url": _asset_url,
         "sepet_sayisi": sepet_sayisi,
+        "t": t,
+        "dil": _dil(),
+        "DIL_ADLARI": DIL_ADLARI,
+        "DIL_BAYRAK": DIL_BAYRAK,
     }
+
+
+@app.route("/dil/<kod>")
+def dil_degistir(kod):
+    """Arayüz dilini değiştirir (kullanıcı isteği 2026-10-01). Ürün/kategori
+    çevirileri Sheets'ten (core/catalog_source.py), sabit arayüz metinleri
+    METINLER sözlüğünden gelir. Oturum olmadan da çalışır (giriş/başvuru
+    sayfalarında da dil seçilebilsin)."""
+    if kod in DIL_ADLARI:
+        session["dil"] = kod
+        session.permanent = True
+    return redirect(request.referrer or url_for("index"))
 
 
 @app.route("/", methods=["GET"])
@@ -117,11 +258,11 @@ def giris():
 
     hata = None
     if not kvkk:
-        hata = "Gizlilik politikasını kabul etmelisiniz."
+        hata = t("hata_kvkk")
     elif not firma_adi or not temsilci:
-        hata = "Firma adı ve Müşteri Temsilcisi Adı zorunludur."
+        hata = t("hata_zorunlu_alan")
     elif sifre != LOGIN_PASSWORD:
-        hata = "Şifre hatalı."
+        hata = t("hata_sifre")
 
     if hata:
         return render_template("giris.html", hata=hata, firma_adi=firma_adi, temsilci=temsilci), 400
@@ -149,7 +290,7 @@ def basvuru():
 
     if not adi or not mail or not telefon:
         return render_template(
-            "basvuru.html", hata="Firma adı, e-posta ve telefon zorunludur.",
+            "basvuru.html", hata=t("basvuru_hata_zorunlu"),
             adi=adi, mail=mail, telefon=telefon, adres=adres, mesaj=mesaj,
         ), 400
 
@@ -273,9 +414,11 @@ def ayarlar_fiyat_x2():
 
 
 def _kategorilere_gore_grupla(products):
+    # Gruplama DAİMA Türkçe category_name ile (URL/filtre anahtarı değişmez,
+    # dil değişince link kırılmasın); görüntülenen ad ayrıca dil'e göre alınır.
     kategoriler = {}
     for p in products:
-        ad = p.category_name or "Diğer"
+        ad = p.category_name or t("kategori_diger")
         kategoriler.setdefault(ad, []).append(p)
     return dict(sorted(kategoriler.items(), key=lambda kv: kv[0]))
 
@@ -285,18 +428,19 @@ def _kategorilere_gore_grupla(products):
 def kategoriler():
     products = catalog_source.fetch_catalog()
     gruplu = _kategorilere_gore_grupla(products)
+    dil = _dil()
     kategori_listesi = [
-        {"ad": ad, "urun_sayisi": len(urunler)}
+        {"ad": ad, "ad_goster": urunler[0].kategori_adi(dil) if urunler else ad, "urun_sayisi": len(urunler)}
         for ad, urunler in gruplu.items()
     ]
     return render_template("kategoriler.html", kategoriler=kategori_listesi)
 
 
 SIRALAMA_SECENEKLERI = {
-    "fiyat_artan": ("Fiyat: Düşükten Yükseğe", lambda p: p.price, False),
-    "fiyat_azalan": ("Fiyat: Yüksekten Düşüğe", lambda p: p.price, True),
-    "isim_az": ("İsim: A-Z", lambda p: p.title.lower(), False),
-    "isim_za": ("İsim: Z-A", lambda p: p.title.lower(), True),
+    "fiyat_artan": ("sirala_fiyat_artan", lambda p: p.price, False),
+    "fiyat_azalan": ("sirala_fiyat_azalan", lambda p: p.price, True),
+    "isim_az": ("sirala_isim_az", lambda p: p.title.lower(), False),
+    "isim_za": ("sirala_isim_za", lambda p: p.title.lower(), True),
 }
 
 
@@ -305,10 +449,12 @@ SIRALAMA_SECENEKLERI = {
 def kategori_urunleri(kategori_adi):
     q = (request.args.get("q") or "").strip().lower()
     sirala = request.args.get("sirala") or ""
+    dil = _dil()
     products = catalog_source.fetch_catalog()
-    urunler = [p for p in products if (p.category_name or "Diğer") == kategori_adi]
+    urunler = [p for p in products if (p.category_name or t("kategori_diger")) == kategori_adi]
+    kategori_baslik = urunler[0].kategori_adi(dil) if urunler else kategori_adi
     if q:
-        urunler = [p for p in urunler if q in p.title.lower() or q in p.barcode]
+        urunler = [p for p in urunler if _urun_eslesiyor(p, q)]
     if sirala in SIRALAMA_SECENEKLERI:
         _, anahtar, tersten = SIRALAMA_SECENEKLERI[sirala]
         urunler = sorted(urunler, key=anahtar, reverse=tersten)
@@ -324,7 +470,7 @@ def kategori_urunleri(kategori_adi):
     sonuc = [
         {
             "barkod": p.barcode,
-            "baslik": p.title,
+            "baslik": p.baslik(dil),
             "fiyat": _effective_price(p.price),
             "stok": p.stock,
             "resim": p.images[0] if p.images else None,
@@ -333,7 +479,7 @@ def kategori_urunleri(kategori_adi):
         for p in urunler
     ]
     return render_template(
-        "kategori.html", kategori_adi=kategori_adi, urunler=sonuc, arama=q,
+        "kategori.html", kategori_adi=kategori_adi, kategori_baslik=kategori_baslik, urunler=sonuc, arama=q,
         sirala=sirala, siralama_secenekleri=SIRALAMA_SECENEKLERI,
     )
 
@@ -345,7 +491,7 @@ def urun_detay(barkod):
     products = catalog_source.fetch_catalog()
     urun = next((p for p in products if p.barcode == barkod), None)
     if not urun:
-        return render_template("hata.html", mesaj="Ürün bulunamadı."), 404
+        return render_template("hata.html", mesaj=t("hata_urun_bulunamadi")), 404
     return render_template(
         "urun.html",
         urun=urun,
@@ -382,7 +528,10 @@ def sepete_ekle():
 
     # Sheets yazma arka planda olur, kullanıcı beklemez - sepet sayacı hemen
     # (iyimser) güncellenir (kullanıcının 2026-09-25 isteği, bkz. order_writer
-    # .append_cart_items_async docstring'i).
+    # .append_cart_items_async docstring'i). Sheet'e DAİMA Türkçe/kanonik ad
+    # yazılır (işletme sahibi oradan okuyor) - görüntülenen/flash mesajdaki ad
+    # ayrıca dile göre alınır.
+    dil = _dil()
     order_writer.append_cart_items_async(session["kullanici_adi"], [{
         "barcode": urun.barcode,
         "title": urun.title,
@@ -395,12 +544,12 @@ def sepete_ekle():
         # yenilenmesin diye JSON dönülür (bkz. static/js/app.js).
         return jsonify({
             "ok": True,
-            "urun_adi": urun.title,
+            "urun_adi": urun.baslik(dil),
             "miktar": miktar,
             "sepet_sayisi": order_writer.get_cart_count(session["kullanici_adi"]),
         })
 
-    flash(f"“{urun.title}” sepete eklendi.")
+    flash(f"“{urun.baslik(dil)}” {t('sepete_eklendi_son')}")
     return redirect(donus_url)
 
 
@@ -487,17 +636,18 @@ def urun_arama():
     # ikinci buton) - sepete ekleme formu template'te kullanici_adi yoksa
     # zaten gizleniyor.
     q = (request.args.get("q") or "").strip().lower()
+    dil = _dil()
     products = catalog_source.fetch_catalog()
     if q:
-        products = [p for p in products if q in p.title.lower() or q in p.barcode]
+        products = [p for p in products if _urun_eslesiyor(p, q)]
     sonuc = [
         {
             "barkod": p.barcode,
-            "baslik": p.title,
+            "baslik": p.baslik(dil),
             "fiyat": _effective_price(p.price),
             "stok": p.stock,
             "resim": p.images[0] if p.images else None,
-            "kategori": p.category_name,
+            "kategori": p.kategori_adi(dil),
         }
         for p in products[:200]
     ]
@@ -510,20 +660,18 @@ def urun_arama():
 
 @app.errorhandler(404)
 def sayfa_bulunamadi(_e):
-    return render_template("hata.html", mesaj="Sayfa bulunamadı."), 404
+    return render_template("hata.html", mesaj=t("hata_sayfa_bulunamadi")), 404
 
 
 @app.errorhandler(catalog_source.CatalogUnavailable)
 def katalog_yok(e):
     logger.error("katalog kullanılamıyor: %s", e)
-    return render_template(
-        "hata.html", mesaj="Ürün kataloğu şu an yüklenemiyor, lütfen biraz sonra tekrar deneyin.",
-    ), 503
+    return render_template("hata.html", mesaj=t("hata_katalog_yuklenemedi")), 503
 
 
 @app.errorhandler(500)
 def sunucu_hatasi(_e):
-    return render_template("hata.html", mesaj="Beklenmedik bir hata oluştu, lütfen tekrar deneyin."), 500
+    return render_template("hata.html", mesaj=t("hata_sunucu")), 500
 
 
 if __name__ == "__main__":
