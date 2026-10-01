@@ -42,6 +42,9 @@ ICERIK_URL = f"https://docs.google.com/spreadsheets/d/{KATALOG_SHEET_ID}/gviz/tq
 # core/ceviri_bakim.py'nin GOOGLETRANSLATE formülleriyle doldurduğu sekme -
 # başlıkların İngilizce/Rusça çevirisi (kullanıcı isteği 2026-10-01).
 CEVIRI_BASLIK_URL = f"https://docs.google.com/spreadsheets/d/{KATALOG_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=ceviri_baslik"
+# 'grup' sekmesinde/override'larda çevirisi olmayan kategori adlarının otomatik
+# (GOOGLETRANSLATE) çevirisi - core/ceviri_bakim.py doldurur.
+CEVIRI_KATEGORI_URL = f"https://docs.google.com/spreadsheets/d/{KATALOG_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=ceviri_kategori"
 # "SİPARİŞ DOSYASI" spreadsheet'inin (core/order_writer.py ile aynı dosya)
 # 'tanımlı müşteriler' sekmesi: Kodu -> musteriadi/temsilci/sifre. Giriş
 # ekranındaki müşteri kodu otofill'i için (bkz. app.py).
@@ -391,6 +394,25 @@ def _fetch_icerik_lookup_tum() -> tuple[dict[str, str], dict[str, dict[str, str]
     return tr_sozluk, i18n_sozluk
 
 
+def _fetch_kategori_ceviri_lookup() -> dict[str, dict[str, str]]:
+    """Türkçe kategori adı -> {"en":..,"ru":..} ('ceviri_kategori' sekmesi,
+    GOOGLETRANSLATE). Sekme henüz yoksa/erişilemezse boş döner."""
+    try:
+        rows = _fetch_csv_rows(CEVIRI_KATEGORI_URL)
+    except requests.exceptions.RequestException:
+        return {}
+    result: dict[str, dict[str, str]] = {}
+    for row in rows:
+        ad = (row.get("tr_ad") or "").strip()
+        if not ad:
+            continue
+        d = {dil: (row.get(f"{dil}_ad") or "").strip() for dil in ("en", "ru")}
+        d = {k: v for k, v in d.items() if v}
+        if d:
+            result[ad] = d
+    return result
+
+
 def _fetch_baslik_ceviri_lookup() -> dict[str, dict[str, str]]:
     """Ürün başlıklarının İngilizce/Rusça çevirisi - core/ceviri_bakim.py'nin
     yazdığı 'ceviri_baslik' sekmesinden (barkod + tr_baslik + GOOGLETRANSLATE
@@ -503,7 +525,8 @@ def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
     # Render.com'un free tier'ında sıralı çekim gunicorn'un worker timeout'unu
     # (varsayılan 30sn) aşıp worker'ın SIGKILL'lenmesine yol açtı (2026-09-23,
     # canlı ortamda yakalandı) - paralel çekim bunu ~6 kat hızlandırır.
-    with ThreadPoolExecutor(max_workers=7) as executor:
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        f_kategori_ceviri = executor.submit(_fetch_kategori_ceviri_lookup)
         f_stok = executor.submit(_fetch_csv_rows, STOK_URL)
         f_grup = executor.submit(_fetch_grup_lookup)
         f_resimler = executor.submit(_fetch_resimler_lookup)
@@ -519,6 +542,7 @@ def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
         adrev = f_adrev.result()
         icerik_lookup, icerik_ceviri_lookup = f_icerik.result()
         baslik_ceviri_lookup = f_baslik_ceviri.result()
+        kategori_ceviri_lookup = f_kategori_ceviri.result()
     _kelime_bicimlerini_ogren(adrev, icerik_lookup)
 
     products: list[Product] = []
@@ -549,6 +573,8 @@ def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
         # EN/RU kategori adı - sadece grup_lookup'tan (override/clean fallback
         # TR'dir, çevirisi yok); TR-UZUN ile aynıysa (override kullanıldıysa)
         # eklenmez, kategori_adi() zaten category_name'e düşer.
+        # Öncelik: elle yazılmış (override sözlüğü / 'grup' ENG-UZUN,RU-UZUN) ->
+        # eksik dil varsa 'ceviri_kategori' sekmesindeki otomatik çeviri.
         if grup_kodu in CATEGORY_NAME_OVERRIDES:
             category_name_i18n = dict(CATEGORY_NAME_OVERRIDES_I18N.get(category_name, {}))
         else:
@@ -556,6 +582,8 @@ def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
                 dil: ad for dil, ad in grup_adlari.items()
                 if dil != "tr" and ad and category_name == grup_adlari.get("tr")
             }
+        for dil, ad in kategori_ceviri_lookup.get(category_name or "", {}).items():
+            category_name_i18n.setdefault(dil, ad)
 
         images = resimler_lookup.get(barcode)
         if not images:

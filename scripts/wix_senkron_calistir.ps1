@@ -11,6 +11,11 @@ Set-Location $ProjectRoot
 
 "==== $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') senkron basladi" | Out-File -Append -Encoding utf8 $Log
 $env:PYTHONIOENCODING = "utf-8"
+# Once ceviri bakimi (kullanici istegi 2026-10-01: yeni urun/kategori gelince
+# EN/RU cevirisi de otomatik gelsin) - yeni barkod/kategori icin Sheets'e
+# GOOGLETRANSLATE formulu yazar. Hata verse bile Wix senkronu yine calisir.
+& "$env:SystemRoot\System32\cmd.exe" /c "`"$PythonExe`" -m core.ceviri_bakim >> `"$Log`" 2>&1"
+"==== ceviri bakimi bitti (cikis kodu $LASTEXITCODE)" | Out-File -Append -Encoding utf8 $Log
 & "$env:SystemRoot\System32\cmd.exe" /c "`"$PythonExe`" -m core.wix_sync --uygula >> `"$Log`" 2>&1"
 "==== $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') senkron bitti (cikis kodu $LASTEXITCODE)" | Out-File -Append -Encoding utf8 $Log
 exit $LASTEXITCODE

@@ -38,6 +38,8 @@ from core import catalog_source as cs  # noqa: E402
 CREDENTIALS_PATH = Path(__file__).resolve().parent.parent / "credentials" / "excel-to-sheet.json"
 BASLIK_SEKME_ADI = "ceviri_baslik"
 BASLIK_BASLIKLAR = ["barkod", "tr_baslik", "en_baslik", "ru_baslik"]
+KATEGORI_SEKME_ADI = "ceviri_kategori"
+KATEGORI_BASLIKLAR = ["tr_ad", "en_ad", "ru_ad"]
 
 
 def _client() -> gspread.Client:
@@ -122,12 +124,48 @@ def icerik_cevirilerini_ekle(wix_degil_sheets_client: gspread.Client | None = No
     return {"icerik_formulu_eklenen": len(guncellenecek)}
 
 
+def kategori_sekmesini_guncelle(wix_degil_sheets_client: gspread.Client | None = None) -> dict:
+    """Kullanıcı isteği 2026-10-01: yeni kategori gelince çevirisi de otomatik
+    gelsin. 'grup' sekmesinin ENG-UZUN/RU-UZUN'undan ya da kodun
+    CATEGORY_NAME_OVERRIDES_I18N'inden çevirisi GELMEYEN her kategori adı
+    'ceviri_kategori' sekmesine (tr_ad + GOOGLETRANSLATE formülleri) eklenir.
+    Sekmede zaten olan ad tekrar yazılmaz (formül henüz hesaplanmamış olsa da)."""
+    client = wix_degil_sheets_client or _client()
+    sh = client.open_by_key(cs.KATALOG_SHEET_ID)
+    try:
+        ws = sh.worksheet(KATEGORI_SEKME_ADI)
+    except gspread.WorksheetNotFound:
+        ws = sh.add_worksheet(title=KATEGORI_SEKME_ADI, rows=500, cols=3)
+        ws.update(range_name="A1:C1", values=[KATEGORI_BASLIKLAR])
+
+    mevcut = ws.get_all_values()
+    sekmedekiler = {row[0].strip() for row in mevcut[1:] if row and row[0].strip()}
+
+    eksikler: list[str] = []
+    for p in cs.fetch_catalog():
+        ad = p.category_name
+        if not ad or ad in sekmedekiler or ad in eksikler:
+            continue
+        if "en" not in p.category_name_i18n or "ru" not in p.category_name_i18n:
+            eksikler.append(ad)
+
+    yeni_satirlar = []
+    for ad in eksikler:
+        satir_no = len(mevcut) + len(yeni_satirlar) + 1
+        yeni_satirlar.append([ad, _formul(f"A{satir_no}", "en"), _formul(f"A{satir_no}", "ru")])
+    if yeni_satirlar:
+        ws.append_rows(yeni_satirlar, value_input_option="USER_ENTERED")
+    return {"kategori_eklenen": len(yeni_satirlar), "eklenenler": eksikler}
+
+
 def main() -> None:
     client = _client()
     r1 = baslik_sekmesini_guncelle(client)
     print("ceviri_baslik:", r1)
     r2 = icerik_cevirilerini_ekle(client)
     print("içerik EN/RU:", r2)
+    r3 = kategori_sekmesini_guncelle(client)
+    print("ceviri_kategori:", r3)
 
 
 if __name__ == "__main__":
