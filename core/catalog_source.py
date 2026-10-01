@@ -39,6 +39,9 @@ RESIMLER_URL = f"https://docs.google.com/spreadsheets/d/{KATALOG_SHEET_ID}/gviz/
 KATALOG_URL = f"https://docs.google.com/spreadsheets/d/{KATALOG_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Katalog"
 ADREV_URL = f"https://docs.google.com/spreadsheets/d/{KATALOG_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=adrev"
 ICERIK_URL = f"https://docs.google.com/spreadsheets/d/{KATALOG_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=içerik"
+# core/ceviri_bakim.py'nin GOOGLETRANSLATE formülleriyle doldurduğu sekme -
+# başlıkların İngilizce/Rusça çevirisi (kullanıcı isteği 2026-10-01).
+CEVIRI_BASLIK_URL = f"https://docs.google.com/spreadsheets/d/{KATALOG_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=ceviri_baslik"
 # "SİPARİŞ DOSYASI" spreadsheet'inin (core/order_writer.py ile aynı dosya)
 # 'tanımlı müşteriler' sekmesi: Kodu -> musteriadi/temsilci/sifre. Giriş
 # ekranındaki müşteri kodu otofill'i için (bkz. app.py).
@@ -336,14 +339,56 @@ def _strip_hidden_fields(description: str) -> str:
     return re.sub(r"\s{2,}", " ", cleaned).strip()
 
 
-def _fetch_icerik_lookup() -> dict[str, str]:
+def _fetch_icerik_lookup_tum() -> tuple[dict[str, str], dict[str, dict[str, str]]]:
+    """'içerik' sekmesini TEK seferde çeker (icerik_tr HER ZAMAN, icerik_en/
+    icerik_ru'yu da - varsa - aynı istekten çıkarır; ayrı bir HTTP isteği
+    açmaz). İkinci değer: barkod -> {"en":..,"ru":..} - core/ceviri_bakim.py'nin
+    GOOGLETRANSLATE formülleriyle doldurduğu sütunlar, henüz hesaplanmamış/boş
+    olanlar sözlükte yer almaz (çağıran taraf Türkçeye döner)."""
     rows = _fetch_csv_rows(ICERIK_URL)
-    result = {}
+    tr_sozluk: dict[str, str] = {}
+    i18n_sozluk: dict[str, dict[str, str]] = {}
     for row in rows:
         barcode = (row.get("barkod") or "").strip()
+        if not barcode:
+            continue
         content = (row.get("icerik_tr") or "").strip()
-        if barcode and content:
-            result[barcode] = content
+        if content:
+            tr_sozluk[barcode] = content
+        en = (row.get("icerik_en") or "").strip()
+        ru = (row.get("icerik_ru") or "").strip()
+        if en or ru:
+            d = {}
+            if en:
+                d["en"] = _strip_hidden_fields(en)
+            if ru:
+                d["ru"] = _strip_hidden_fields(ru)
+            i18n_sozluk[barcode] = d
+    return tr_sozluk, i18n_sozluk
+
+
+def _fetch_baslik_ceviri_lookup() -> dict[str, dict[str, str]]:
+    """Ürün başlıklarının İngilizce/Rusça çevirisi - core/ceviri_bakim.py'nin
+    yazdığı 'ceviri_baslik' sekmesinden (barkod + tr_baslik + GOOGLETRANSLATE
+    formülleri). Henüz hesaplanmamış/boş olanlar sözlükte yer almaz."""
+    try:
+        rows = _fetch_csv_rows(CEVIRI_BASLIK_URL)
+    except requests.exceptions.RequestException:
+        return {}
+    result: dict[str, dict[str, str]] = {}
+    for row in rows:
+        barcode = (row.get("barkod") or "").strip()
+        if not barcode:
+            continue
+        en = (row.get("en_baslik") or "").strip()
+        ru = (row.get("ru_baslik") or "").strip()
+        if en or ru:
+            d = {}
+            if en:
+                d["en"] = en
+            if ru:
+                d["ru"] = ru
+            result[barcode] = d
     return result
 
 
@@ -358,6 +403,18 @@ class Product:
     images: list[str] = field(default_factory=list)
     description: str = ""
     resim_tarihi: datetime | None = None
+    # İngilizce/Rusça çeviri (kullanıcı isteği 2026-10-01, core/ceviri_bakim.py
+    # ile Sheets'in GOOGLETRANSLATE'i üzerinden dolduruluyor). Sadece "en"/"ru"
+    # anahtarları olabilir, "tr" burada YOK - title/description zaten Türkçe.
+    # Henüz çeviri hesaplanmamışsa boş kalır, baslik()/aciklama() Türkçeye döner.
+    title_i18n: dict[str, str] = field(default_factory=dict)
+    description_i18n: dict[str, str] = field(default_factory=dict)
+
+    def baslik(self, dil: str) -> str:
+        return self.title_i18n.get(dil) or self.title
+
+    def aciklama(self, dil: str) -> str:
+        return self.description_i18n.get(dil) or self.description
 
 
 # Cloudinary URL'lerindeki "/v1746104308/" gibi sürüm segmenti aslında o
@@ -418,20 +475,22 @@ def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
     # Render.com'un free tier'ında sıralı çekim gunicorn'un worker timeout'unu
     # (varsayılan 30sn) aşıp worker'ın SIGKILL'lenmesine yol açtı (2026-09-23,
     # canlı ortamda yakalandı) - paralel çekim bunu ~6 kat hızlandırır.
-    with ThreadPoolExecutor(max_workers=6) as executor:
+    with ThreadPoolExecutor(max_workers=7) as executor:
         f_stok = executor.submit(_fetch_csv_rows, STOK_URL)
         f_grup = executor.submit(_fetch_grup_lookup)
         f_resimler = executor.submit(_fetch_resimler_lookup)
         f_trad = executor.submit(_fetch_katalog_trad)
         f_adrev = executor.submit(_fetch_adrev_dict)
-        f_icerik = executor.submit(_fetch_icerik_lookup)
+        f_icerik = executor.submit(_fetch_icerik_lookup_tum)
+        f_baslik_ceviri = executor.submit(_fetch_baslik_ceviri_lookup)
 
         stok_rows = f_stok.result()
         grup_lookup = f_grup.result()
         resimler_lookup = f_resimler.result()
         trad_lookup = f_trad.result()
         adrev = f_adrev.result()
-        icerik_lookup = f_icerik.result()
+        icerik_lookup, icerik_ceviri_lookup = f_icerik.result()
+        baslik_ceviri_lookup = f_baslik_ceviri.result()
     _kelime_bicimlerini_ogren(adrev, icerik_lookup)
 
     products: list[Product] = []
@@ -475,6 +534,8 @@ def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
             images=images,
             description=_strip_hidden_fields(icerik_lookup.get(barcode, "")),
             resim_tarihi=_resim_yukleme_tarihi(images[0] if images else None),
+            title_i18n=baslik_ceviri_lookup.get(barcode, {}),
+            description_i18n=icerik_ceviri_lookup.get(barcode, {}),
         ))
 
     logger.info("catalog_source: %d ürün (stok >= %d, fiyat > 0)", len(products), min_stock)
