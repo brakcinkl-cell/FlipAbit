@@ -71,6 +71,20 @@ CATEGORY_NAME_OVERRIDES = {
     "1040-YAT.ORT.NEV.TAK CK": "YATAK ÖRTÜLÜ NEVRESİM TAKIMI ÇİFT KİŞİLİK",
     "1060-PIKELI NEV.TAK TK": "PİKELİ NEVRESİM TAKIMI TEK KİŞİLİK",
 }
+# Override adlarının İngilizce/Rusça karşılığı - 'grup' sekmesinde bunlara
+# özel satır yok (orada genel isimle duruyorlar), elle çevrildi (kullanıcı
+# isteği 2026-10-01). Anahtar: override'ın Türkçe adı.
+CATEGORY_NAME_OVERRIDES_I18N = {
+    "KUTULU HAVLU": {"en": "BOXED TOWELS", "ru": "ПОЛОТЕНЦА В ПОДАРОЧНОЙ КОРОБКЕ"},
+    "BATTANİYELİ NEVRESİM TAKIMI ÇİFT KİŞİLİK": {
+        "en": "DUVET COVER SET WITH BLANKET - DOUBLE", "ru": "КОМПЛЕКТ ПОСТЕЛЬНОГО БЕЛЬЯ С ОДЕЯЛОМ - ДВУСПАЛЬНЫЙ"},
+    "PİKELİ NEVRESİM TAKIMI ÇİFT KİŞİLİK": {
+        "en": "DUVET COVER SET WITH PIQUE - DOUBLE", "ru": "КОМПЛЕКТ ПОСТЕЛЬНОГО БЕЛЬЯ С ПИКЕ - ДВУСПАЛЬНЫЙ"},
+    "YATAK ÖRTÜLÜ NEVRESİM TAKIMI ÇİFT KİŞİLİK": {
+        "en": "DUVET COVER SET WITH BEDSPREAD - DOUBLE", "ru": "КОМПЛЕКТ ПОСТЕЛЬНОГО БЕЛЬЯ С ПОКРЫВАЛОМ - ДВУСПАЛЬНЫЙ"},
+    "PİKELİ NEVRESİM TAKIMI TEK KİŞİLİK": {
+        "en": "DUVET COVER SET WITH PIQUE - SINGLE", "ru": "КОМПЛЕКТ ПОСТЕЛЬНОГО БЕЛЬЯ С ПИКЕ - ОДНОСПАЛЬНЫЙ"},
+}
 
 _WORD_RE = re.compile(r"[^\s]+")
 _TR_UPPER_I, _TR_LOWER_I = "İ", "i"
@@ -535,10 +549,13 @@ def _fetch_catalog_uncached(min_stock: int) -> list[Product]:
         # EN/RU kategori adı - sadece grup_lookup'tan (override/clean fallback
         # TR'dir, çevirisi yok); TR-UZUN ile aynıysa (override kullanıldıysa)
         # eklenmez, kategori_adi() zaten category_name'e düşer.
-        category_name_i18n = {
-            dil: ad for dil, ad in grup_adlari.items()
-            if dil != "tr" and ad and category_name == grup_adlari.get("tr")
-        }
+        if grup_kodu in CATEGORY_NAME_OVERRIDES:
+            category_name_i18n = dict(CATEGORY_NAME_OVERRIDES_I18N.get(category_name, {}))
+        else:
+            category_name_i18n = {
+                dil: ad for dil, ad in grup_adlari.items()
+                if dil != "tr" and ad and category_name == grup_adlari.get("tr")
+            }
 
         images = resimler_lookup.get(barcode)
         if not images:
