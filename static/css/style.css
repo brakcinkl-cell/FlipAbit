@@ -525,3 +525,19 @@ table.siparis-tablosu th { background: var(--charcoal); color: #fff; }
     /* Sağ taraftaki formun üstündeki tekrar eden logo masaüstünde gizli */
     .login-split .login-wrap .login-logo { display: none; }
 }
+
+/* Masaüstü üst çubuk ters renk: koyu zemin, beyaz logo/yazı (2026-10-20) */
+@media (min-width: 900px) {
+    .navbar {
+        background: linear-gradient(90deg, #2b2e31 0%, #3a3e42 100%);
+        border-bottom: 1px solid #1f2123;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28);
+    }
+    .nav-marka img { filter: brightness(0) invert(1); }
+    .navbar a.nav-item, .navbar button.nav-item { color: #f1f1f1; }
+    .navbar a.nav-item:hover { background: rgba(255,255,255,0.10); color: #fff; }
+    .navbar a.nav-item.active, .navbar .nav-item.active { background: rgba(255, 149, 1, 0.20); color: #ffb238; }
+    .sepet-rozet { box-shadow: 0 0 0 2px #2b2e31; }
+    .dil-secici select { background: rgba(255,255,255,0.10); color: #fff; border-color: rgba(255,255,255,0.25); }
+    .dil-secici select option { color: #111; }
+}
