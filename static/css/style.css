@@ -471,7 +471,7 @@ table.siparis-tablosu th { background: var(--charcoal); color: #fff; }
         gap: 6px; margin-right: 28px; padding: 0 !important; color: #fff;
     }
     .marka-ad { font-size: 22px; font-weight: 800; letter-spacing: 0.02em; }
-    .marka-alt { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--orange); }
+    .marka-alt { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--orange); }
     .navbar a.nav-item, .navbar button.nav-item {
         padding: 10px 16px; border-radius: 999px; font-weight: 600;
         transition: background .15s, color .15s;
@@ -486,4 +486,29 @@ table.siparis-tablosu th { background: var(--charcoal); color: #fff; }
         background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.25); cursor: pointer;
     }
     .toggle-x2 { margin-left: 14px; }
+}
+
+/* --- Masaüstü tema: "Özdilek | Özgünaydın AŞ - Güney Marmara Bölge Bayi"
+   logosunun gri/beyaz paleti (2026-10-20). Mobil dokunulmadı. --- */
+@media (min-width: 900px) {
+    :root { --gri-logo: #4c5155; }
+    .navbar {
+        background: #ffffff; box-shadow: 0 2px 20px rgba(76, 81, 85, 0.14);
+        border-bottom: 1px solid var(--border);
+    }
+    .nav-marka { margin-right: 36px; }
+    .nav-marka img { height: 42px; width: auto; display: block; }
+    .navbar a.nav-item, .navbar button.nav-item { color: var(--gri-logo); }
+    .navbar a.nav-item:hover { background: rgba(76, 81, 85, 0.08); color: var(--charcoal); }
+    .navbar a.nav-item.active, .navbar .nav-item.active { background: rgba(255, 149, 1, 0.14); color: #d97f00; }
+    .sepet-rozet { box-shadow: 0 0 0 2px #fff; }
+    .dil-secici select {
+        background: #f3efea; color: var(--gri-logo); border-color: var(--border);
+    }
+    .dil-secici select option { color: #111; }
+    .login-hero {
+        background:
+            radial-gradient(circle at 85% 10%, rgba(255, 149, 1, 0.30), transparent 45%),
+            linear-gradient(160deg, #3f4347 0%, #5b6064 100%);
+    }
 }
