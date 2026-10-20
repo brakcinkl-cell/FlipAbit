@@ -1,6 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Giriş - Özdilek Toptan{% endblock %}
 {% block content %}
+<div class="login-split">
+<aside class="login-hero">
+    <h1>{{ t('giris_hero_baslik') }}</h1>
+    <p>{{ t('giris_hero_alt') }}</p>
+    <ul>
+        <li>{{ t('giris_hero_1') }}</li>
+        <li>{{ t('giris_hero_2') }}</li>
+        <li>{{ t('giris_hero_3') }}</li>
+    </ul>
+</aside>
 <div class="login-wrap">
     <img class="login-logo" src="{{ url_for('static', filename='images/logo.png') }}" alt="Özdilek Toptan">
 
@@ -28,6 +38,7 @@
     </form>
 
     <div class="footer-links"><a href="{{ url_for('gizlilik_politikasi') }}">{{ t('gizlilik_link') }}</a></div>
+</div>
 </div>
 
 <script>

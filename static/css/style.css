@@ -370,3 +370,41 @@ table.siparis-tablosu th { background: var(--charcoal); color: #fff; }
 @media (max-width: 480px) {
     .navbar a, .navbar .nav-item { font-size: 10px; min-width: 48px; }
 }
+
+/* --- Giriş: masaüstü iki sütunlu modern düzen (2026-10-20). Mobilde hero
+   gizli, eski sade tek sütun aynen kalır. --- */
+.login-hero { display: none; }
+@media (min-width: 900px) {
+    .container:has(.login-split) { max-width: 1040px; padding-top: 48px; }
+    .login-split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        background: var(--card-bg);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 1, 49, 0.18);
+        min-height: 560px;
+    }
+    .login-hero {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 56px 48px;
+        color: #fff;
+        background:
+            radial-gradient(circle at 85% 10%, rgba(255, 149, 1, 0.35), transparent 45%),
+            linear-gradient(160deg, #000131 0%, #101a5a 100%);
+    }
+    .login-hero h1 { font-size: 34px; line-height: 1.2; margin: 0 0 12px; }
+    .login-hero p { font-size: 16px; opacity: 0.8; margin: 0 0 28px; }
+    .login-hero ul { list-style: none; padding: 0; margin: 0; }
+    .login-hero li { padding: 10px 0 10px 28px; position: relative; font-size: 15px; }
+    .login-hero li::before {
+        content: "✓"; position: absolute; left: 0; color: var(--orange); font-weight: 800;
+    }
+    .login-split .login-wrap {
+        display: flex; flex-direction: column; justify-content: center;
+        padding: 48px 56px;
+    }
+    .login-split .form-field { max-width: none; }
+}
