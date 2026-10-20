@@ -408,3 +408,51 @@ table.siparis-tablosu th { background: var(--charcoal); color: #fff; }
     }
     .login-split .form-field { max-width: none; }
 }
+
+/* --- Masaüstü düzeni (>=900px, 2026-10-20): tüm sayfalar. Mobil kurallar
+   değişmedi; burası sadece geniş ekranda üzerine yazar. --- */
+@media (min-width: 900px) {
+    .container { max-width: 1240px; padding: 28px 32px 48px; }
+    .container h2 { font-size: 26px; margin: 8px 0 4px; }
+
+    /* Üst çubuk: ikon+yazı yan yana, soldan hizalı, dil/toggle sağda */
+    .navbar { justify-content: flex-start; gap: 8px; padding: 0 32px; min-height: 60px; }
+    .navbar a, .navbar button.nav-item {
+        flex-direction: row; gap: 8px; font-size: 14px; font-weight: 600;
+        padding: 18px 14px; min-width: 0; border-radius: 0;
+    }
+    .navbar a br { display: none; }
+    .navbar .nav-item .icon { font-size: 18px; }
+    .navbar a.active, .navbar .nav-item.active { box-shadow: inset 0 -3px 0 var(--orange); }
+
+    /* Kategori listesi: 2 sütunlu kartlar */
+    .kategori-liste { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .kategori-satir { padding: 18px 20px; }
+    .kategori-satir:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+
+    /* Arama çubuğu */
+    .arama-bar { max-width: 760px; }
+
+    /* Ürün ızgarası: daha geniş kartlar, daha çok sütun */
+    .urun-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 20px; }
+    .urun-card { transition: transform .15s, box-shadow .15s; }
+    .urun-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,0,0,0.10); }
+    .urun-card .baslik { font-size: 14px; min-height: 40px; }
+
+    /* Ürün detay: solda görsel, sağda bilgiler */
+    .urun-detay {
+        display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        column-gap: 40px; align-content: start; padding: 32px;
+    }
+    .urun-detay > img, .urun-detay > .resim-yok { grid-column: 1; grid-row: 1 / span 8; max-height: 520px; }
+    .urun-detay > :not(img):not(.resim-yok) { grid-column: 2; }
+    .urun-detay h1 { font-size: 28px; margin-top: 0; }
+    .urun-detay .fiyat-buyuk { font-size: 32px; }
+
+    /* Tablolar: rahat satırlar */
+    table.siparis-tablosu th, table.siparis-tablosu td { padding: 14px 16px; font-size: 15px; }
+    .toplam-satiri { font-size: 18px; }
+
+    /* Başvuru formu ve hata sayfası ortada, okunaklı genişlikte */
+    .container > .login-wrap:not(.login-split .login-wrap) { max-width: 560px; margin: 24px auto; background: var(--card-bg); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); padding: 40px; }
+}

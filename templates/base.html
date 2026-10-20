@@ -21,7 +21,7 @@
     </a>
     {% if kullanici_adi %}
         <a href="{{ url_for('bekleyen_siparislerim') }}" class="nav-item">
-            <span class="icon">📄</span><span>{{ t('nav_bekleyen_1') }}<br>{{ t('nav_bekleyen_2') }}</span>
+            <span class="icon">📄</span><span>{{ t('nav_bekleyen_1') }} <br>{{ t('nav_bekleyen_2') }}</span>
         </a>
     {% endif %}
     <a href="{{ url_for('giris') }}" class="nav-item {{ 'active' if not kullanici_adi }}">
