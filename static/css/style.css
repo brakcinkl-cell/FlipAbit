@@ -541,3 +541,14 @@ table.siparis-tablosu th { background: var(--charcoal); color: #fff; }
     .dil-secici select { background: rgba(255,255,255,0.10); color: #fff; border-color: rgba(255,255,255,0.25); }
     .dil-secici select option { color: #111; }
 }
+
+/* Giriş paneli logosu ters (plakasız beyaz logo) + butonlar üst çubuk renginde (2026-10-20) */
+@media (min-width: 900px) {
+    .hero-logo { background: transparent; box-shadow: none; padding: 0; margin-bottom: 40px; }
+    .hero-logo img { height: 56px; filter: brightness(0) invert(1); }
+    .btn-navy {
+        background: linear-gradient(90deg, #2b2e31 0%, #3a3e42 100%);
+        color: #fff; border: 1px solid #1f2123;
+    }
+    .btn-navy:hover { background: linear-gradient(90deg, #34383b 0%, #454a4f 100%); }
+}
