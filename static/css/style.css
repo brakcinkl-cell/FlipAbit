@@ -512,3 +512,16 @@ table.siparis-tablosu th { background: var(--charcoal); color: #fff; }
             linear-gradient(160deg, #3f4347 0%, #5b6064 100%);
     }
 }
+
+/* Giriş karşılama paneli: logo beyaz plaka üzerinde (2026-10-20) */
+.hero-logo { display: none; }
+@media (min-width: 900px) {
+    .hero-logo {
+        display: inline-block; align-self: flex-start;
+        background: #fff; border-radius: 14px; padding: 14px 20px; margin-bottom: 36px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+    }
+    .hero-logo img { display: block; height: 52px; width: auto; }
+    /* Sağ taraftaki formun üstündeki tekrar eden logo masaüstünde gizli */
+    .login-split .login-wrap .login-logo { display: none; }
+}
