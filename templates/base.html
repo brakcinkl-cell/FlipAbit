@@ -11,6 +11,7 @@
 </head>
 <body>
 <nav class="navbar">
+    <a href="{{ url_for('index') }}" class="nav-marka"><span class="marka-ad">Özdilek</span><span class="marka-alt">Toptan</span></a>
     {% if kullanici_adi %}
         <a href="{{ url_for('kategoriler') }}" class="nav-item">
             <span class="icon">📦</span><span>{{ t('nav_kategoriler') }}</span>
